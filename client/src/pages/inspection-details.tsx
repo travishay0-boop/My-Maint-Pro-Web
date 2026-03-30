@@ -119,7 +119,7 @@ export default function InspectionDetails() {
   // Mutation to update inspection item completion
   const updateItemMutation = useMutation({
     mutationFn: async ({ itemId, isCompleted }: { itemId: number; isCompleted: boolean }) => {
-      return await apiRequest('PATCH', `/api/inspection-items/${itemId}`, {
+      return await apiRequest(`/api/inspection-items/${itemId}`, 'PATCH', {
         isCompleted,
         completedDate: isCompleted ? new Date().toISOString() : null,
         inspectionPeriodId: parseInt(periodId!)
@@ -156,7 +156,7 @@ export default function InspectionDetails() {
   // Mutation to complete the inspection period and generate report
   const completeInspectionMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', `/api/inspection-periods/${periodId}/complete`, {});
+      const response = await apiRequest(`/api/inspection-periods/${periodId}/complete`, 'POST', {});
       return response;
     },
     onSuccess: (data) => {

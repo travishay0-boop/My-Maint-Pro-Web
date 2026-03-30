@@ -107,7 +107,7 @@ export default function InspectionReportModal({
 
   const sendReportMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', `/api/properties/${propertyId}/inspection-report/send`, {
+      return await apiRequest(`/api/properties/${propertyId}/inspection-report/send`, 'POST', {
         recipientEmail,
         recipientName
       });

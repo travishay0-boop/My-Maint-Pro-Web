@@ -13,7 +13,8 @@ import {
   insertMaintenanceTaskSchema, insertMaintenanceTemplateSchema,
   insertPropertyRoomSchema, insertInspectionItemSchema,
   insertComplianceCertificateSchema, insertServiceProviderSchema,
-  loginSchema, registerSchema, signupSchema, forgotPasswordSchema, resetPasswordSchema 
+  loginSchema, registerSchema, signupSchema, forgotPasswordSchema, resetPasswordSchema,
+  emailVerificationTokens
 } from "@shared/schema";
 import { detectCountryFromAddress } from "@shared/compliance-standards";
 import { getInspectionIntervalForItem, parseInspectionInterval, calculateNextInspectionDate } from "@shared/inspection-intervals";
@@ -484,9 +485,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: { 
           ...newUser, 
           password: undefined 
-        }
+        },
+        token: `mock-token-${newUser.id}`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Register error:', error);
       if (error instanceof z.ZodError) {
         const fieldErrors = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
@@ -495,7 +497,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: error.errors
         });
       }
-      res.status(400).json({ message: "An error occurred during registration. Please try again." });
+      const detail = error?.message || String(error);
+      res.status(400).json({ message: `Registration error: ${detail}` });
+    }
+  });
+
+  // Send (or resend) email verification OTP
+  app.post("/api/auth/send-verification", async (req, res) => {
+    try {
+      const { userId, email } = req.body;
+      if (!userId || !email) return res.status(400).json({ message: "userId and email required" });
+
+      const user = await storage.getUser(Number(userId));
+      if (!user) return res.status(404).json({ message: "User not found" });
+      if (user.emailVerified) return res.status(400).json({ message: "Email already verified" });
+
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+      // Store token in DB
+      const { db } = await import('./db');
+      const { eq, and, isNull } = await import('drizzle-orm');
+      // Invalidate any existing unused tokens for this user
+      await db.update(emailVerificationTokens)
+        .set({ usedAt: new Date() })
+        .where(and(eq(emailVerificationTokens.userId, user.id), isNull(emailVerificationTokens.usedAt)));
+
+      await db.insert(emailVerificationTokens).values({ userId: user.id, token: otp, expiresAt });
+
+      // Send verification email
+      const appUrl = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://login.mymaintpro.com';
+      try {
+        const { sendEmail } = await import('./sendgrid');
+        await sendEmail({
+          to: user.email,
+          subject: 'Your My Maintenance Pro verification code',
+          html: `
+            <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+              <h2 style="color: #2196F3;">Verify your email</h2>
+              <p>Hi ${user.firstName},</p>
+              <p>Enter this code to verify your email address. It expires in 15 minutes.</p>
+              <div style="background: #f0f7ff; border: 2px solid #2196F3; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
+                <span style="font-size: 40px; font-weight: bold; letter-spacing: 8px; color: #2196F3;">${otp}</span>
+              </div>
+              <p style="color: #666; font-size: 14px;">If you didn't create an account, you can ignore this email.</p>
+            </div>
+          `,
+          text: `Your My Maintenance Pro verification code is: ${otp}. It expires in 15 minutes.`,
+        });
+        console.log(`Verification email sent to ${user.email}`);
+      } catch (emailErr: any) {
+        console.error('Failed to send verification email:', emailErr.message);
+        // In dev, log the OTP so we can still test
+        console.log(`[DEV] OTP for ${user.email}: ${otp}`);
+      }
+
+      res.json({ message: "Verification code sent", ...(process.env.NODE_ENV === 'development' ? { _devOtp: otp } : {}) });
+    } catch (error: any) {
+      console.error('Send verification error:', error);
+      res.status(500).json({ message: "Failed to send verification code" });
+    }
+  });
+
+  // Verify email with OTP
+  app.post("/api/auth/verify-email", async (req, res) => {
+    try {
+      const { userId, token } = req.body;
+      if (!userId || !token) return res.status(400).json({ message: "userId and token required" });
+
+      const { db } = await import('./db');
+      const { eq, and, isNull, gt } = await import('drizzle-orm');
+
+      // Find a valid, unused, non-expired token
+      const now = new Date();
+      const [record] = await db.select()
+        .from(emailVerificationTokens)
+        .where(and(
+          eq(emailVerificationTokens.userId, Number(userId)),
+          eq(emailVerificationTokens.token, token),
+          isNull(emailVerificationTokens.usedAt),
+          gt(emailVerificationTokens.expiresAt, now)
+        ))
+        .limit(1);
+
+      if (!record) {
+        return res.status(400).json({ message: "Invalid or expired verification code" });
+      }
+
+      // Mark token as used and mark user as verified
+      await db.update(emailVerificationTokens)
+        .set({ usedAt: now })
+        .where(eq(emailVerificationTokens.id, record.id));
+
+      const updatedUser = await storage.updateUser(Number(userId), {
+        emailVerified: true,
+        emailVerifiedAt: now,
+      });
+
+      // Return updated user (excluding password)
+      const { password: _, ...safeUser } = updatedUser as any;
+      res.json({ message: "Email verified", user: safeUser });
+    } catch (error: any) {
+      console.error('Verify email error:', error);
+      res.status(500).json({ message: "Verification failed" });
     }
   });
 

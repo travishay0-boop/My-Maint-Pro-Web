@@ -248,7 +248,7 @@ export default function OnboardingWizard({ open, onClose }: OnboardingWizardProp
       dismissed?: boolean;
       completedSteps?: string[];
     }) => {
-      const res = await apiRequest('PATCH', '/api/user/onboarding', data);
+      const res = await apiRequest('/api/user/onboarding', 'PATCH', data);
       return res.json();
     },
     onSuccess: () => {

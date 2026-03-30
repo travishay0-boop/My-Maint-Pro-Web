@@ -90,10 +90,12 @@ export class StripeService {
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ['card'],
-      line_items: [{ price: monthlyPriceId, quantity: monthlyQty }],
+      line_items: [
+        { price: setupPriceId, quantity: 1 },
+        { price: monthlyPriceId, quantity: monthlyQty },
+      ],
       mode: 'subscription',
       subscription_data: {
-        add_invoice_items: [{ price: setupPriceId, quantity: 1 }],
         metadata: { tier, propertyCount: String(propertyCount), userId: String(userId) },
       },
       success_url: successUrl,

@@ -91,8 +91,12 @@ export default function Signup() {
       }
       return res.json();
     },
-    onSuccess: () => {
-      window.location.href = '/signup/plan';
+    onSuccess: (data: any) => {
+      if (data?.user && data?.token) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('token', data.token);
+      }
+      window.location.href = '/verify-email';
     },
     onError: (err: Error) => {
       setError(err.message);

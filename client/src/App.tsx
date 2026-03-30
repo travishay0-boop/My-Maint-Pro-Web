@@ -11,6 +11,7 @@ import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import Landing from "@/pages/landing";
 import SignupPlan from "@/pages/signup-plan";
+import VerifyEmail from "@/pages/verify-email";
 import CheckoutSuccess from "@/pages/checkout-success";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
@@ -53,7 +54,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
-  const publicRoutes = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/checkout/success', '/forgot-password', '/certificate-confirmed'];
+  const publicRoutes = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed'];
   const isPublic = publicRoutes.includes(location) || location.startsWith('/reset-password') || location.startsWith('/submit-certificate');
   if (!user && !isPublic) {
     setLocation('/login');
@@ -75,7 +76,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
-  const isAuthOrOnboardingRoute = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/checkout/success', '/forgot-password', '/certificate-confirmed'].includes(location) || location.startsWith('/reset-password') || location.startsWith('/submit-certificate');
+  const isAuthOrOnboardingRoute = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed'].includes(location) || location.startsWith('/reset-password') || location.startsWith('/submit-certificate');
 
   // If user is logged in but hasn't accepted TOS, show the TOS modal
   const showTosModal = user && !user.tosAccepted && !isAuthOrOnboardingRoute;
@@ -209,6 +210,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/signup/plan" component={SignupPlan} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />

@@ -101,6 +101,8 @@ export const users = pgTable("users", {
   channel: text("channel").default("residential"), // residential, commercial
   promoCodeUsed: text("promo_code_used"),
   setupFeePaid: boolean("setup_fee_paid").default(false),
+  emailVerified: boolean("email_verified").default(false),
+  emailVerifiedAt: timestamp("email_verified_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -759,6 +761,18 @@ export const insertUserFeedbackSchema = createInsertSchema(userFeedback).omit({
 
 export type UserFeedback = typeof userFeedback.$inferSelect;
 export type InsertUserFeedback = z.infer<typeof insertUserFeedbackSchema>;
+
+// Email verification tokens - OTP codes sent to verify user email addresses
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  token: text("token").notNull(), // 6-digit OTP
+  expiresAt: timestamp("expires_at").notNull(),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 
 // Certificate verification tokens - for contractor SMS verification
 export const certificateVerifications = pgTable("certificate_verifications", {

@@ -43,7 +43,7 @@ function getTierFromUser(propertyCount: number, channel?: string): TierKey {
 }
 
 export default function SignupPlan() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [promoCode, setPromoCode] = useState('');
@@ -59,12 +59,17 @@ export default function SignupPlan() {
   const reportOnlyCost = userChannel === 'commercial' ? 19.99 * propertyCount : 12.99;
 
   useEffect(() => {
-    if (!user) setLocation('/login');
-  }, [user]);
+    if (isLoading) return;
+    if (!user) {
+      setLocation('/login');
+    } else if (!(user as any).emailVerified) {
+      setLocation('/verify-email');
+    }
+  }, [isLoading, user]);
 
   const validatePromo = useMutation({
     mutationFn: async (code: string) => {
-      const res = await apiRequest('POST', '/api/stripe/validate-promo', { code });
+      const res = await apiRequest('/api/stripe/validate-promo', 'POST', { code });
       return res.json();
     },
     onSuccess: (data) => {
@@ -79,7 +84,7 @@ export default function SignupPlan() {
 
   const redeemPromo = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/stripe/redeem-promo', { code: promoCode });
+      const res = await apiRequest('/api/stripe/redeem-promo', 'POST', { code: promoCode });
       return res.json();
     },
     onSuccess: () => {
@@ -90,7 +95,7 @@ export default function SignupPlan() {
 
   const checkout = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest('POST', '/api/stripe/checkout', {
+      const res = await apiRequest('/api/stripe/checkout', 'POST', {
         planType: selectedPlan,
         propertyCount,
         tier,
