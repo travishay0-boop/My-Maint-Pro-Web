@@ -411,7 +411,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { username, password } = loginSchema.parse(req.body);
       
-      const user = await storage.getUserByUsername(username);
+      // Accept either username or email address
+      let user = await storage.getUserByUsername(username);
+      if (!user && username.includes('@')) {
+        user = await storage.getUserByEmail(username);
+      }
       if (!user) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
@@ -440,7 +444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         token: `mock-token-${user.id}` // Mock token for development
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
       if (error instanceof z.ZodError) {
         const fieldErrors = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
@@ -449,7 +453,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: error.errors
         });
       }
-      res.status(400).json({ message: "An error occurred. Please try again." });
+      const detail = error?.message || String(error);
+      res.status(400).json({ message: "An error occurred. Please try again.", detail });
     }
   });
 

@@ -76,7 +76,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
-  const isAuthOrOnboardingRoute = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed'].includes(location) || location.startsWith('/reset-password') || location.startsWith('/submit-certificate');
+  const pathname = location.split('?')[0];
+  const isAuthOrOnboardingRoute = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed'].includes(pathname) || pathname.startsWith('/reset-password') || pathname.startsWith('/submit-certificate');
 
   // If user is logged in but hasn't accepted TOS, show the TOS modal
   const showTosModal = user && !user.tosAccepted && !isAuthOrOnboardingRoute;

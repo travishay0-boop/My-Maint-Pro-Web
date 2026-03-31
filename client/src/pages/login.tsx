@@ -67,7 +67,7 @@ export default function Login() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">Email or Username</Label>
                 <Input
                   id="username"
                   type="text"
@@ -75,7 +75,7 @@ export default function Login() {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                   className="mt-1"
-                  placeholder="Enter username"
+                  placeholder="Enter email or username"
                 />
               </div>
 
