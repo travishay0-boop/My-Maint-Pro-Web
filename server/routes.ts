@@ -4243,9 +4243,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.id, user.email, `${user.firstName} ${user.lastName}`
       );
 
-      const baseUrl = process.env.REPLIT_DOMAINS
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-        : 'http://localhost:5000';
+      const baseUrl = process.env.APP_URL
+        || (process.env.RENDER_EXTERNAL_URL || null)
+        || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : null)
+        || 'http://localhost:5000';
 
       const resolvedTier = tier || user.subscriptionTier || 'my_home';
       const resolvedChannel = channel || user.channel || 'residential';
@@ -4289,9 +4290,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [user] = await db.select().from(users).where(eq(users.id, req.user!.id));
       if (!user.stripeCustomerId) return res.status(400).json({ error: 'No billing account found' });
       const { stripeService } = await import('./stripeService');
-      const baseUrl = process.env.REPLIT_DOMAINS
-        ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}`
-        : 'http://localhost:5000';
+      const baseUrl = process.env.APP_URL
+        || (process.env.RENDER_EXTERNAL_URL || null)
+        || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : null)
+        || 'http://localhost:5000';
       const session = await stripeService.createPortalSession(user.stripeCustomerId, `${baseUrl}/dashboard`);
       res.json({ url: session.url });
     } catch (error: any) {
