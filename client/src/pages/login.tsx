@@ -22,15 +22,15 @@ export default function Login() {
     setIsLoading(true);
     setError('');
 
-    const success = await login(username, password);
+    const result = await login(username, password);
     
-    if (success) {
+    if (result.success) {
       // Small delay to allow auth state to propagate before redirecting
       setTimeout(() => {
         setLocation('/dashboard');
       }, 100);
     } else {
-      setError('Invalid username or password. Please try again.');
+      setError(result.error || 'Invalid username or password. Please try again.');
       setIsLoading(false);
     }
   };

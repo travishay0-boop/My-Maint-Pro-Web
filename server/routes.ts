@@ -458,6 +458,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/auth/logout", (req, res) => {
+    if (req.session) {
+      req.session.destroy(() => {});
+    }
+    res.json({ success: true });
+  });
+
   app.post("/api/auth/register", async (req, res) => {
     try {
       const userData = registerSchema.parse(req.body);

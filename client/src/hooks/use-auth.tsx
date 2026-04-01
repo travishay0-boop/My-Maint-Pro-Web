@@ -1,11 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '@shared/schema';
-import { apiRequest } from '@/lib/queryClient';
 import { applyTheme } from '@/lib/theme';
 
 interface AuthContextType {
   user: User | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   setUser: (user: User, token: string) => void;
   updateUser: (updates: Partial<User>) => void;
@@ -37,28 +36,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setIsLoading(false);
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await apiRequest('/api/auth/login', 'POST', { username, password });
-      const data = await response.json();
-      
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include',
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        return { success: false, error: data.message || 'Invalid username or password. Please try again.' };
+      }
+
       if (data.user && data.token) {
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('token', data.token);
-        
-        // Apply theme based on user type
         applyTheme(data.user.userType || 'agency');
-        
-        // Set user ID header for subsequent requests
-        // In a real app, you'd use proper JWT token authentication
-        return true;
+        return { success: true };
       }
-      
-      return false;
+
+      return { success: false, error: 'Login failed. Please try again.' };
     } catch (error) {
       console.error('Login failed:', error);
-      return false;
+      return { success: false, error: 'Unable to connect. Please check your internet connection and try again.' };
     }
   };
 
@@ -66,9 +70,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    // Reset to default theme
     applyTheme('agency');
-    // Clear API cache on logout for security
+    // Invalidate the server-side session (fire and forget)
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' });
     }
