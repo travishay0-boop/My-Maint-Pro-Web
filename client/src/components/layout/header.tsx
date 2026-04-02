@@ -111,6 +111,7 @@ export default function Header({ onRestartOnboarding }: HeaderProps) {
                 <Button 
                   variant="ghost" 
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary"
+                  data-testid="button-user-menu"
                 >
                   <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">{userInitials}</span>

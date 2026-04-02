@@ -29,6 +29,7 @@ import Settings from "@/pages/settings";
 import NotFound from "@/pages/not-found";
 import SubmitCertificate from "@/pages/submit-certificate";
 import CertificateConfirmed from "@/pages/certificate-confirmed";
+import PrivacyPolicy from "@/pages/privacy";
 
 import Header from "@/components/layout/header";
 import Sidebar from "@/components/layout/sidebar";
@@ -54,7 +55,7 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     );
   }
 
-  const publicRoutes = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed'];
+  const publicRoutes = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed', '/privacy'];
   const isPublic = publicRoutes.includes(location) || location.startsWith('/reset-password') || location.startsWith('/submit-certificate');
   if (!user && !isPublic) {
     setLocation('/login');
@@ -77,7 +78,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
 
   const pathname = location.split('?')[0];
-  const isAuthOrOnboardingRoute = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed'].includes(pathname) || pathname.startsWith('/reset-password') || pathname.startsWith('/submit-certificate');
+  const isAuthOrOnboardingRoute = ['/', '/welcome', '/login', '/signup', '/signup/plan', '/verify-email', '/checkout/success', '/forgot-password', '/certificate-confirmed', '/privacy'].includes(pathname) || pathname.startsWith('/reset-password') || pathname.startsWith('/submit-certificate');
 
   // If user is logged in but hasn't accepted TOS, show the TOS modal
   const showTosModal = user && !user.tosAccepted && !isAuthOrOnboardingRoute;
@@ -217,6 +218,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/submit-certificate/:token" component={SubmitCertificate} />
       <Route path="/certificate-confirmed" component={CertificateConfirmed} />
+      <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/dashboard">
         <ProtectedRoute component={Dashboard} />
       </Route>
