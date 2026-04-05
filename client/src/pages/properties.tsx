@@ -74,7 +74,7 @@ import {
 } from 'lucide-react';
 
 export default function Properties() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -142,32 +142,29 @@ export default function Properties() {
 
 
 
+  // Use server-authoritative endpoint — works even when user.agencyId is stale/null in localStorage
   const { data: properties, isLoading } = useQuery({
-    queryKey: ['/api/properties', user?.agencyId],
+    queryKey: ['/api/my-properties'],
     queryFn: async () => {
-      if (!user?.agencyId) throw new Error('No agency ID');
-      const response = await authenticatedApiRequest('GET', `/api/properties/${user.agencyId}`);
+      const response = await authenticatedApiRequest('GET', '/api/my-properties');
       return await response.json() as Property[];
     },
-    enabled: !!user?.agencyId,
   });
 
   // Fetch inspection completion ratios for all properties
   const { data: inspectionRatios } = useQuery({
-    queryKey: ['/api/properties', user?.agencyId, 'inspection-ratios'],
+    queryKey: ['/api/my-properties', 'inspection-ratios'],
     queryFn: async () => {
-      if (!user?.agencyId) throw new Error('No agency ID');
-      const response = await authenticatedApiRequest('GET', `/api/properties/${user.agencyId}/inspection-ratios`);
+      const response = await authenticatedApiRequest('GET', '/api/my-properties/inspection-ratios');
       return await response.json() as { propertyId: number; completedCount: number; totalCount: number; completionRatio: number }[];
     },
-    enabled: !!user?.agencyId,
   });
 
-  // Fetch inspection periods with completion status
+  // Fetch inspection periods with completion status (per-agency)
   const { data: inspectionPeriods } = useQuery({
     queryKey: ['/api/properties', user?.agencyId, 'inspection-periods'],
     queryFn: async () => {
-      if (!user?.agencyId) throw new Error('No agency ID');
+      if (!user?.agencyId) return [];
       const response = await authenticatedApiRequest('GET', `/api/properties/${user.agencyId}/inspection-periods`);
       return await response.json() as Array<{
         propertyId: number;
@@ -192,8 +189,17 @@ export default function Properties() {
       const response = await authenticatedApiRequest('POST', '/api/properties', propertyData);
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.agencyId] });
+    onSuccess: async (data) => {
+      // Refresh properties list (server-authoritative endpoint)
+      queryClient.invalidateQueries({ queryKey: ['/api/my-properties'] });
+      // Also refresh user so agencyId gets updated in auth context (in case it was just created)
+      try {
+        const meRes = await authenticatedApiRequest('GET', '/api/user/me');
+        const freshUser = await meRes.json();
+        if (freshUser?.agencyId && freshUser.agencyId !== user?.agencyId) {
+          updateUser({ agencyId: freshUser.agencyId });
+        }
+      } catch { /* non-critical */ }
       toast({
         title: 'Success',
         description: 'Property added successfully',
@@ -217,7 +223,7 @@ export default function Properties() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.agencyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/my-properties'] });
       toast({
         title: 'Success',
         description: 'Property updated successfully',
@@ -241,7 +247,7 @@ export default function Properties() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/properties', user?.agencyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/my-properties'] });
       setDeleteDialogOpen(false);
       setPropertyToDelete(null);
       toast({

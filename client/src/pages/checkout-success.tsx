@@ -2,11 +2,13 @@ import { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function CheckoutSuccess() {
   const [, setLocation] = useLocation();
+  const { updateUser } = useAuth();
   const params = new URLSearchParams(window.location.search);
   const sessionId = params.get('session_id');
 
@@ -15,8 +17,12 @@ export default function CheckoutSuccess() {
       const res = await apiRequest('GET', `/api/stripe/checkout-success?session_id=${sessionId}`);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data?.user) {
+        updateUser(data.user);
+      }
       queryClient.invalidateQueries({ queryKey: ['/api/user/me'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/my-properties'] });
     },
   });
 

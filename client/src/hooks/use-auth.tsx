@@ -22,17 +22,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session on mount
     const savedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    
+
     if (savedUser && token) {
       const userData = JSON.parse(savedUser);
       setUser(userData);
-      // Apply theme based on user type
       applyTheme(userData.userType || 'agency');
+
+      // Background sync: always refresh from server to pick up any changes
+      // (e.g. agencyId assigned after Stripe signup, emailVerified status, etc.)
+      fetch('/api/user/me', {
+        headers: { 'x-user-id': String(userData.id), 'Authorization': `Bearer ${token}` },
+        credentials: 'include',
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(freshUser => {
+          if (freshUser && freshUser.id) {
+            const merged = { ...userData, ...freshUser };
+            setUser(merged);
+            localStorage.setItem('user', JSON.stringify(merged));
+            applyTheme(merged.userType || 'agency');
+          }
+        })
+        .catch(() => { /* non-critical — use cached user */ });
     }
-    
+
     setIsLoading(false);
   }, []);
 
@@ -71,7 +86,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     applyTheme('agency');
-    // Invalidate the server-side session (fire and forget)
     fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
       navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' });

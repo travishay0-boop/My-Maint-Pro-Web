@@ -43,7 +43,7 @@ function getTierFromUser(propertyCount: number, channel?: string): TierKey {
 }
 
 export default function SignupPlan() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, updateUser } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [promoCode, setPromoCode] = useState('');
@@ -87,7 +87,8 @@ export default function SignupPlan() {
       const res = await apiRequest('/api/stripe/redeem-promo', 'POST', { code: promoCode });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (data?.user) updateUser(data.user);
       toast({ title: 'Access granted!', description: 'Your promo code has been redeemed.' });
       setLocation('/dashboard');
     },

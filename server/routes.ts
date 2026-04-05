@@ -1464,6 +1464,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Server-authoritative properties endpoint — no agencyId needed in URL.
+  // Works even when the client has a stale/null agencyId in localStorage.
+  app.get("/api/my-properties", async (req: AuthenticatedRequest, res) => {
+    try {
+      let agencyId = req.user!.agencyId;
+      if (!agencyId) {
+        const user = req.user!;
+        const newAgency = await storage.createAgency({
+          name: `${user.name || user.email}'s Properties`,
+          email: user.email,
+          phone: '',
+          address: '',
+          isActive: true,
+        });
+        await storage.updateUser(user.id, { agencyId: newAgency.id });
+        agencyId = newAgency.id;
+      }
+      const properties = await storage.getPropertiesByAgency(agencyId);
+      res.json(properties);
+    } catch (error) {
+      console.error('Error fetching my-properties:', error);
+      res.status(500).json({ message: "Failed to fetch properties" });
+    }
+  });
+
+  // Server-authoritative inspection-ratios endpoint
+  app.get("/api/my-properties/inspection-ratios", async (req: AuthenticatedRequest, res) => {
+    try {
+      const agencyId = req.user!.agencyId;
+      if (!agencyId) return res.json([]);
+      const ratios = await storage.getPropertyInspectionRatios(agencyId);
+      res.json(ratios);
+    } catch (error) {
+      console.error('Error fetching inspection ratios:', error);
+      res.status(500).json({ message: "Failed to fetch inspection ratios" });
+    }
+  });
+
   // Properties routes
   app.get("/api/properties/:agencyId", requireAgencyAccess, async (req: AuthenticatedRequest, res) => {
     try {
@@ -4259,7 +4297,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!code) return res.status(400).json({ error: 'Code is required' });
       const { stripeService } = await import('./stripeService');
       const result = await stripeService.redeemPromoCode(code, req.user!.id);
-      res.json(result);
+
+      // Ensure user has an agencyId after promo redemption
+      const { db } = await import('./db');
+      const { users, agencies } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      let [freshUser] = await db.select().from(users).where(eq(users.id, req.user!.id));
+      if (!freshUser.agencyId) {
+        const [newAgency] = await db.insert(agencies).values({
+          name: `${freshUser.firstName || freshUser.email}'s Properties`,
+          email: freshUser.email,
+          isActive: true,
+        }).returning();
+        await db.update(users).set({ agencyId: newAgency.id }).where(eq(users.id, freshUser.id));
+        freshUser = { ...freshUser, agencyId: newAgency.id };
+      }
+
+      const { password: _pw, ...safeUser } = freshUser;
+      res.json({ ...result, user: safeUser });
     } catch (error: any) {
       res.status(400).json({ error: error.message });
     }
@@ -4311,7 +4366,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!session_id) return res.status(400).json({ error: 'session_id required' });
       const { stripeService } = await import('./stripeService');
       await stripeService.handleCheckoutComplete(session_id as string);
-      res.json({ success: true });
+
+      // Ensure the user has an agencyId — create one if missing
+      // (Stripe webhook only sets subscriptionStatus, never creates agency)
+      const { db } = await import('./db');
+      const { users, agencies } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      let [freshUser] = await db.select().from(users).where(eq(users.id, req.user!.id));
+      if (!freshUser.agencyId) {
+        const [newAgency] = await db.insert(agencies).values({
+          name: `${freshUser.firstName || freshUser.email}'s Properties`,
+          email: freshUser.email,
+          isActive: true,
+        }).returning();
+        await db.update(users).set({ agencyId: newAgency.id }).where(eq(users.id, freshUser.id));
+        freshUser = { ...freshUser, agencyId: newAgency.id };
+      }
+
+      const { password: _pw, ...safeUser } = freshUser;
+      res.json({ success: true, user: safeUser });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
