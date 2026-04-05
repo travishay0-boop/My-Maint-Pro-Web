@@ -88,6 +88,48 @@ export default function Properties() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [propertyToDelete, setPropertyToDelete] = useState<Property | null>(null);
 
+  // Structured address sub-fields (combined into single address string on submit)
+  const [addAddressParts, setAddAddressParts] = useState({ street: '', suburb: '', stateRegion: '', postcode: '' });
+  const [editAddressParts, setEditAddressParts] = useState({ street: '', suburb: '', stateRegion: '', postcode: '' });
+
+  const ADDRESS_STATE_OPTIONS: Record<string, { label: string; options: string[] }> = {
+    AU: { label: 'State / Territory', options: ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA'] },
+    US: { label: 'State', options: ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY'] },
+    GB: { label: 'County / Region', options: ['England', 'Scotland', 'Wales', 'Northern Ireland'] },
+    NZ: { label: 'Region', options: ['Auckland', 'Bay of Plenty', 'Canterbury', 'Gisborne', "Hawke's Bay", 'Manawatu-Whanganui', 'Marlborough', 'Nelson', 'Northland', 'Otago', 'Southland', 'Taranaki', 'Tasman', 'Waikato', 'Wellington', 'West Coast'] },
+    CA: { label: 'Province / Territory', options: ['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT'] },
+  };
+  const ADDRESS_SUBURB_LABEL: Record<string, string> = { AU: 'Suburb', US: 'City', GB: 'City / Town', NZ: 'Suburb / Town', CA: 'City' };
+  const ADDRESS_POSTCODE_LABEL: Record<string, string> = { AU: 'Postcode', US: 'ZIP Code', GB: 'Postcode', NZ: 'Postcode', CA: 'Postal Code' };
+
+  function assembleAddress(parts: { street: string; suburb: string; stateRegion: string; postcode: string }) {
+    const statePostcode = [parts.stateRegion, parts.postcode].filter(Boolean).join(' ');
+    return [parts.street, parts.suburb, statePostcode].filter(Boolean).join(', ');
+  }
+
+  function parseAddressParts(address: string) {
+    const parts = address.split(',').map(p => p.trim());
+    if (parts.length >= 3) {
+      const street = parts[0];
+      const suburb = parts[1];
+      const lastPart = parts[parts.length - 1].trim();
+      const lastSpaceIdx = lastPart.lastIndexOf(' ');
+      let stateRegion = lastPart;
+      let postcode = '';
+      if (lastSpaceIdx > -1) {
+        const potentialPostcode = lastPart.substring(lastSpaceIdx + 1);
+        if (/^[A-Z0-9]{3,10}$/.test(potentialPostcode)) {
+          stateRegion = lastPart.substring(0, lastSpaceIdx);
+          postcode = potentialPostcode;
+        }
+      }
+      return { street, suburb, stateRegion, postcode };
+    } else if (parts.length === 2) {
+      return { street: parts[0], suburb: parts[1], stateRegion: '', postcode: '' };
+    }
+    return { street: address, suburb: '', stateRegion: '', postcode: '' };
+  }
+
   // Auto-open add dialog when ?add=true is in URL
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -158,6 +200,7 @@ export default function Properties() {
       });
       setIsAddDialogOpen(false);
       form.reset();
+      setAddAddressParts({ street: '', suburb: '', stateRegion: '', postcode: '' });
     },
     onError: (error) => {
       toast({
@@ -289,23 +332,38 @@ export default function Properties() {
     }
   }, [form]);
 
+  const addCountry = form.watch('country') || 'AU';
+  const editCountry = editForm.watch('country') || 'AU';
+
+  // Keep the hidden address field in sync with sub-fields so Zod validation passes
+  useEffect(() => {
+    const assembled = assembleAddress(addAddressParts);
+    if (assembled) form.setValue('address', assembled, { shouldValidate: false });
+  }, [addAddressParts]);
+
+  useEffect(() => {
+    const assembled = assembleAddress(editAddressParts);
+    if (assembled) editForm.setValue('address', assembled, { shouldValidate: false });
+  }, [editAddressParts]);
+
   const onSubmit = (data: InsertProperty) => {
-    console.log('Form data before submission:', data);
-    
+    const assembled = assembleAddress(addAddressParts);
     const submissionData = {
       ...data,
+      address: assembled || data.address,
       agencyId: user?.agencyId || 0,
     };
-    console.log('Submission data sent to mutation:', submissionData);
     addPropertyMutation.mutate(submissionData);
   };
 
   const onEditSubmit = (data: InsertProperty) => {
     if (!editingProperty) return;
+    const assembled = assembleAddress(editAddressParts);
     updatePropertyMutation.mutate({
       id: editingProperty.id,
       data: {
         ...data,
+        address: assembled || data.address,
         agencyId: user?.agencyId || 0,
         lastInspectionDate: data.lastInspectionDate ? new Date(data.lastInspectionDate) : null,
         nextInspectionDate: data.nextInspectionDate ? new Date(data.nextInspectionDate) : null,
@@ -315,6 +373,7 @@ export default function Properties() {
 
   const handleEdit = (property: Property) => {
     setEditingProperty(property);
+    setEditAddressParts(parseAddressParts(property.address || ''));
     editForm.reset({
       agencyId: property.agencyId,
       name: property.name,
@@ -486,41 +545,74 @@ export default function Properties() {
                     />
                   </div>
                   
-                  <FormField
-                    control={form.control}
-                    name="address"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Address</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="123 Main Street, City, State" 
-                            {...field}
-                            onBlur={(e) => {
-                              field.onBlur();
-                              // Auto-detect country from address
-                              if (e.target.value) {
-                                const detectedCountry = detectCountryFromAddress(e.target.value);
-                                form.setValue('country', detectedCountry);
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
+                  {/* Street Address — split into sub-fields, assembled on submit */}
+                  <div className="space-y-1.5">
+                    <p className="text-sm font-medium leading-none">Street Address <span className="text-destructive">*</span></p>
+                    <Input
+                      placeholder="e.g. 34 Dorren Court"
+                      value={addAddressParts.street}
+                      onChange={e => setAddAddressParts(p => ({ ...p, street: e.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">Street number and name (use Unit Number field above for unit/apt)</p>
+                  </div>
+
+                  <div className="grid grid-cols-5 gap-3">
+                    <div className="col-span-2 space-y-1.5">
+                      <p className="text-sm font-medium leading-none">{ADDRESS_SUBURB_LABEL[addCountry] || 'Suburb'} <span className="text-destructive">*</span></p>
+                      <Input
+                        placeholder={addCountry === 'AU' ? 'e.g. Moore Park Beach' : addCountry === 'US' ? 'e.g. Los Angeles' : 'City / Suburb'}
+                        value={addAddressParts.suburb}
+                        onChange={e => setAddAddressParts(p => ({ ...p, suburb: e.target.value }))}
+                        onBlur={e => {
+                          const candidate = [addAddressParts.street, e.target.value].filter(Boolean).join(', ');
+                          if (candidate) {
+                            const detected = detectCountryFromAddress(candidate);
+                            if (detected !== addCountry) {
+                              form.setValue('country', detected);
+                              setAddAddressParts(p => ({ ...p, stateRegion: '' }));
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="col-span-2 space-y-1.5">
+                      <p className="text-sm font-medium leading-none">{ADDRESS_STATE_OPTIONS[addCountry]?.label || 'State'} <span className="text-destructive">*</span></p>
+                      <select
+                        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        value={addAddressParts.stateRegion}
+                        onChange={e => setAddAddressParts(p => ({ ...p, stateRegion: e.target.value }))}
+                      >
+                        <option value="">Select...</option>
+                        {(ADDRESS_STATE_OPTIONS[addCountry]?.options || []).map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-1 space-y-1.5">
+                      <p className="text-sm font-medium leading-none">{ADDRESS_POSTCODE_LABEL[addCountry] || 'Postcode'}</p>
+                      <Input
+                        placeholder={addCountry === 'AU' ? '4670' : addCountry === 'US' ? '90210' : ''}
+                        value={addAddressParts.postcode}
+                        onChange={e => setAddAddressParts(p => ({ ...p, postcode: e.target.value.toUpperCase() }))}
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+
+                  {form.formState.errors.address && (
+                    <p className="text-xs text-destructive">{form.formState.errors.address.message}</p>
+                  )}
+
                   <FormField
                     control={form.control}
                     name="country"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Country/Region</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormLabel>Country / Region</FormLabel>
+                        <Select onValueChange={v => { field.onChange(v); setAddAddressParts(p => ({ ...p, stateRegion: '' })); }} value={field.value || ''}>
                           <FormControl>
                             <SelectTrigger data-testid="select-country">
-                              <SelectValue placeholder="Auto-detected from address" />
+                              <SelectValue placeholder="Select country" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -532,7 +624,7 @@ export default function Properties() {
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Automatically detected from address. You can manually override if needed.
+                          Changing country updates the state/postcode fields and compliance standards.
                         </p>
                         <FormMessage />
                       </FormItem>
@@ -1283,41 +1375,74 @@ export default function Properties() {
                 />
               </div>
               
-              <FormField
-                control={editForm.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="123 Main Street, City, State 12345" 
-                        {...field}
-                        onBlur={(e) => {
-                          field.onBlur();
-                          // Auto-detect country from address
-                          if (e.target.value) {
-                            const detectedCountry = detectCountryFromAddress(e.target.value);
-                            editForm.setValue('country', detectedCountry);
-                          }
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
+              {/* Street Address — split sub-fields, assembled on submit */}
+              <div className="space-y-1.5">
+                <p className="text-sm font-medium leading-none">Street Address <span className="text-destructive">*</span></p>
+                <Input
+                  placeholder="e.g. 34 Dorren Court"
+                  value={editAddressParts.street}
+                  onChange={e => setEditAddressParts(p => ({ ...p, street: e.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground">Street number and name (use Unit Number field for unit/apt)</p>
+              </div>
+
+              <div className="grid grid-cols-5 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <p className="text-sm font-medium leading-none">{ADDRESS_SUBURB_LABEL[editCountry] || 'Suburb'} <span className="text-destructive">*</span></p>
+                  <Input
+                    placeholder={editCountry === 'AU' ? 'e.g. Moore Park Beach' : editCountry === 'US' ? 'e.g. Los Angeles' : 'City / Suburb'}
+                    value={editAddressParts.suburb}
+                    onChange={e => setEditAddressParts(p => ({ ...p, suburb: e.target.value }))}
+                    onBlur={e => {
+                      const candidate = [editAddressParts.street, e.target.value].filter(Boolean).join(', ');
+                      if (candidate) {
+                        const detected = detectCountryFromAddress(candidate);
+                        if (detected !== editCountry) {
+                          editForm.setValue('country', detected);
+                          setEditAddressParts(p => ({ ...p, stateRegion: '' }));
+                        }
+                      }
+                    }}
+                  />
+                </div>
+                <div className="col-span-2 space-y-1.5">
+                  <p className="text-sm font-medium leading-none">{ADDRESS_STATE_OPTIONS[editCountry]?.label || 'State'} <span className="text-destructive">*</span></p>
+                  <select
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    value={editAddressParts.stateRegion}
+                    onChange={e => setEditAddressParts(p => ({ ...p, stateRegion: e.target.value }))}
+                  >
+                    <option value="">Select...</option>
+                    {(ADDRESS_STATE_OPTIONS[editCountry]?.options || []).map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-span-1 space-y-1.5">
+                  <p className="text-sm font-medium leading-none">{ADDRESS_POSTCODE_LABEL[editCountry] || 'Postcode'}</p>
+                  <Input
+                    placeholder={editCountry === 'AU' ? '4670' : editCountry === 'US' ? '90210' : ''}
+                    value={editAddressParts.postcode}
+                    onChange={e => setEditAddressParts(p => ({ ...p, postcode: e.target.value.toUpperCase() }))}
+                    maxLength={10}
+                  />
+                </div>
+              </div>
+
+              {editForm.formState.errors.address && (
+                <p className="text-xs text-destructive">{editForm.formState.errors.address.message}</p>
+              )}
+
               <FormField
                 control={editForm.control}
                 name="country"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Country/Region</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <FormLabel>Country / Region</FormLabel>
+                    <Select onValueChange={v => { field.onChange(v); setEditAddressParts(p => ({ ...p, stateRegion: '' })); }} value={field.value || ''}>
                       <FormControl>
                         <SelectTrigger data-testid="select-country-edit">
-                          <SelectValue placeholder="Auto-detected from address" />
+                          <SelectValue placeholder="Select country" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -1329,7 +1454,7 @@ export default function Properties() {
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Automatically detected from address. You can manually override if needed.
+                      Changing country updates the state/postcode fields and compliance standards.
                     </p>
                     <FormMessage />
                   </FormItem>

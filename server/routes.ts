@@ -480,12 +480,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already exists" });
       }
 
-      // Create new user with hashed password
+      // Create a personal agency for new users who don't have one
       const { confirmPassword, ...userToCreate } = userData;
+      let finalAgencyId = userToCreate.agencyId;
+      if (!finalAgencyId) {
+        const firstName = userToCreate.firstName || '';
+        const lastName = userToCreate.lastName || '';
+        const personalAgency = await storage.createAgency({
+          name: `${firstName} ${lastName}${userToCreate.userType === 'private' ? "'s Properties" : "'s Maintenance"}`.trim(),
+          email: userToCreate.email,
+          isActive: true
+        });
+        finalAgencyId = personalAgency.id;
+      }
+
+      // Create new user with hashed password and agencyId
       const hashedPassword = await bcrypt.hash(userToCreate.password, 10);
       const newUser = await storage.createUser({
         ...userToCreate,
-        password: hashedPassword
+        password: hashedPassword,
+        agencyId: finalAgencyId
       });
 
       // Create session so user is logged in immediately after registration

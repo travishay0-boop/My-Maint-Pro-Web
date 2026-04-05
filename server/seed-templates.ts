@@ -1,7 +1,7 @@
 import { storage } from "./storage";
 import { db } from "./db";
-import { promoCodes } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { promoCodes, users, agencies } from "@shared/schema";
+import { eq, isNull } from "drizzle-orm";
 
 export const DEFAULT_PROPERTY_TEMPLATES = [
   {
@@ -313,6 +313,28 @@ export async function seedPropertyTemplates(): Promise<void> {
   }
 
   await seedPromoCodes();
+  await repairUsersWithoutAgency();
+}
+
+async function repairUsersWithoutAgency(): Promise<void> {
+  try {
+    if (!db) return;
+    const orphanUsers = await db.select().from(users).where(isNull(users.agencyId));
+    if (orphanUsers.length === 0) return;
+    console.log(`[Repair] Found ${orphanUsers.length} user(s) without an agency — creating personal agencies...`);
+    for (const user of orphanUsers) {
+      const name = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username;
+      const [agency] = await db.insert(agencies).values({
+        name: `${name}'s Properties`,
+        email: user.email,
+        isActive: true,
+      }).returning();
+      await db.update(users).set({ agencyId: agency.id }).where(eq(users.id, user.id));
+      console.log(`[Repair] Created agency "${agency.name}" for user ${user.email}`);
+    }
+  } catch (error) {
+    console.error('[Repair] Error repairing users without agency:', error);
+  }
 }
 
 async function seedPromoCodes(): Promise<void> {
