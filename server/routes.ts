@@ -1499,12 +1499,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/properties", async (req: AuthenticatedRequest, res) => {
     try {
-      const propertyData = insertPropertySchema.parse(req.body);
-      
-      // Ensure user has access to create properties for this agency
-      if (req.user!.agencyId !== propertyData.agencyId) {
-        return res.status(403).json({ message: "Access denied" });
+      // Server is authoritative on agencyId — use the authenticated user's value,
+      // never trust what the client sends. This prevents both security issues and
+      // the common case where the frontend has a stale/null agencyId.
+      let serverAgencyId = req.user!.agencyId;
+
+      // If the user has no agencyId (e.g., created via older signup flow), create one now
+      if (!serverAgencyId) {
+        const user = req.user!;
+        const newAgency = await storage.createAgency({
+          name: `${user.name || user.email}'s Properties`,
+          email: user.email,
+          phone: '',
+          address: '',
+          isActive: true,
+        });
+        await storage.updateUser(user.id, { agencyId: newAgency.id });
+        serverAgencyId = newAgency.id;
       }
+
+      const propertyData = insertPropertySchema.parse({ ...req.body, agencyId: serverAgencyId });
 
       // Auto-detect country from address if not provided
       if (!propertyData.country && propertyData.address) {
