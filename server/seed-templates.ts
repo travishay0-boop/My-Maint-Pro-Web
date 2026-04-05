@@ -1,4 +1,7 @@
 import { storage } from "./storage";
+import { db } from "./db";
+import { promoCodes } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export const DEFAULT_PROPERTY_TEMPLATES = [
   {
@@ -288,25 +291,48 @@ export async function seedPropertyTemplates(): Promise<void> {
     
     if (existingTemplates.length > 0) {
       console.log(`[Seed] Property templates already exist (${existingTemplates.length} found), skipping seed`);
-      return;
+    } else {
+      console.log('[Seed] Seeding default property templates...');
+      
+      for (const template of DEFAULT_PROPERTY_TEMPLATES) {
+        await storage.createPropertyTemplate({
+          name: template.name,
+          description: template.description,
+          templateType: template.templateType,
+          propertyType: template.propertyType,
+          isSystem: template.isSystem,
+          rooms: template.rooms,
+        });
+        console.log(`[Seed] Created template: ${template.name}`);
+      }
+      
+      console.log(`[Seed] Successfully seeded ${DEFAULT_PROPERTY_TEMPLATES.length} property templates`);
     }
-
-    console.log('[Seed] Seeding default property templates...');
-    
-    for (const template of DEFAULT_PROPERTY_TEMPLATES) {
-      await storage.createPropertyTemplate({
-        name: template.name,
-        description: template.description,
-        templateType: template.templateType,
-        propertyType: template.propertyType,
-        isSystem: template.isSystem,
-        rooms: template.rooms,
-      });
-      console.log(`[Seed] Created template: ${template.name}`);
-    }
-    
-    console.log(`[Seed] Successfully seeded ${DEFAULT_PROPERTY_TEMPLATES.length} property templates`);
   } catch (error) {
     console.error('[Seed] Error seeding property templates:', error);
+  }
+
+  await seedPromoCodes();
+}
+
+async function seedPromoCodes(): Promise<void> {
+  try {
+    if (!db) return;
+    const existing = await db.select().from(promoCodes).where(eq(promoCodes.code, 'WELCOME2024'));
+    if (existing.length > 0) {
+      console.log('[Seed] Promo code WELCOME2024 already exists, skipping');
+      return;
+    }
+    await db.insert(promoCodes).values({
+      code: 'WELCOME2024',
+      description: 'Welcome promo - full access',
+      grantType: 'full_access',
+      maxUses: 100,
+      usedCount: 0,
+      isActive: true,
+    });
+    console.log('[Seed] Created promo code: WELCOME2024');
+  } catch (error) {
+    console.error('[Seed] Error seeding promo codes:', error);
   }
 }
