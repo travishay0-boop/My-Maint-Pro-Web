@@ -2229,6 +2229,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mobile app endpoints
+  app.get("/api/notifications", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = req.user!;
+      const notifications = await storage.getNotificationLogsByRecipient(user.id);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/activity-logs", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = req.user!;
+      if (!user.agencyId) {
+        return res.json([]);
+      }
+      const logs = await storage.getActivityLogsByAgency(user.agencyId);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch activity logs" });
+    }
+  });
+
+  app.get("/api/users", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = req.user!;
+      if (!user.agencyId) {
+        return res.json([]);
+      }
+      const users = await storage.getUsersByAgency(user.agencyId);
+      const safeUsers = users.map(({ password, ...rest }) => rest);
+      res.json(safeUsers);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
   app.get("/api/rooms/agency/:agencyId", requireAgencyAccess, async (req: AuthenticatedRequest, res) => {
     try {
       const agencyId = parseInt(req.params.agencyId);

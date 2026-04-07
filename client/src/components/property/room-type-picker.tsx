@@ -66,6 +66,7 @@ const roomTypes = [
   { value: 'roof', label: 'Roof', icon: Shield, category: 'Outdoor & Exterior' },
   { value: 'gutters', label: 'Gutters', icon: Wind, category: 'Outdoor & Exterior' },
   { value: 'pool', label: 'Pool', icon: Waves, category: 'Outdoor & Exterior' },
+  { value: 'windows_exterior', label: 'Windows Exterior', icon: Wind, category: 'Outdoor & Exterior' },
   { value: 'gym', label: 'Gym/Exercise Room', icon: Shield, category: 'Specialty' },
   { value: 'wine_cellar', label: 'Wine Cellar', icon: Warehouse, category: 'Specialty' },
   { value: 'sauna', label: 'Sauna', icon: Wind, category: 'Specialty' },

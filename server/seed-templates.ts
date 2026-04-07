@@ -42,6 +42,8 @@ export const DEFAULT_PROPERTY_TEMPLATES = [
           { itemName: "Built-in Wardrobe", category: "fixtures", priority: "low", inspectionType: "visual" },
           { itemName: "Flooring", category: "fixtures", priority: "low", inspectionType: "visual" },
           { itemName: "Smoke Detector", category: "safety", priority: "high", inspectionType: "visual", complianceStandard: "AS 3786", photoRequired: true },
+          { itemName: "Wardrobe and Robe Storage", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Data Point", category: "electrical", priority: "low", inspectionType: "visual" },
         ]
       },
       {
@@ -51,6 +53,8 @@ export const DEFAULT_PROPERTY_TEMPLATES = [
           { itemName: "Windows & Screens", category: "fixtures", priority: "medium", inspectionType: "visual" },
           { itemName: "Built-in Wardrobe", category: "fixtures", priority: "low", inspectionType: "visual" },
           { itemName: "Flooring", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Wardrobe and Robe Storage", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Data Point", category: "electrical", priority: "low", inspectionType: "visual" },
         ]
       },
       {
@@ -60,6 +64,8 @@ export const DEFAULT_PROPERTY_TEMPLATES = [
           { itemName: "Windows & Screens", category: "fixtures", priority: "medium", inspectionType: "visual" },
           { itemName: "Built-in Wardrobe", category: "fixtures", priority: "low", inspectionType: "visual" },
           { itemName: "Flooring", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Wardrobe and Robe Storage", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Data Point", category: "electrical", priority: "low", inspectionType: "visual" },
         ]
       },
       {
@@ -162,6 +168,8 @@ export const DEFAULT_PROPERTY_TEMPLATES = [
           { itemName: "Built-in Wardrobe", category: "fixtures", priority: "low", inspectionType: "visual" },
           { itemName: "Flooring", category: "fixtures", priority: "low", inspectionType: "visual" },
           { itemName: "Smoke Detector", category: "safety", priority: "high", inspectionType: "visual", complianceStandard: "AS 3786", photoRequired: true },
+          { itemName: "Wardrobe and Robe Storage", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Data Point", category: "electrical", priority: "low", inspectionType: "visual" },
         ]
       },
       {
@@ -228,6 +236,8 @@ export const DEFAULT_PROPERTY_TEMPLATES = [
           { itemName: "Windows & Screens", category: "fixtures", priority: "medium", inspectionType: "visual" },
           { itemName: "Built-in Wardrobe", category: "fixtures", priority: "low", inspectionType: "visual" },
           { itemName: "Smoke Detector", category: "safety", priority: "high", inspectionType: "visual", complianceStandard: "AS 3786", photoRequired: true },
+          { itemName: "Wardrobe and Robe Storage", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Data Point", category: "electrical", priority: "low", inspectionType: "visual" },
         ]
       },
       {
@@ -236,6 +246,8 @@ export const DEFAULT_PROPERTY_TEMPLATES = [
         inspectionItems: [
           { itemName: "Windows & Screens", category: "fixtures", priority: "medium", inspectionType: "visual" },
           { itemName: "Built-in Wardrobe", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Wardrobe and Robe Storage", category: "fixtures", priority: "low", inspectionType: "visual" },
+          { itemName: "Data Point", category: "electrical", priority: "low", inspectionType: "visual" },
         ]
       },
       {

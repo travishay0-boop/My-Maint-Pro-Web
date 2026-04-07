@@ -1701,15 +1701,38 @@ export class DatabaseStorage implements IStorage {
       // Bedrooms
       'master_bedroom': [...commonItems, 
         { itemName: 'Ceiling Fan', category: 'electrical', description: 'Check ceiling fan operation and stability', priority: 'medium' },
-        { itemName: 'Window Locks', category: 'security', description: 'Ensure window locks are secure and functional', priority: 'medium' }
+        { itemName: 'Window Locks', category: 'security', description: 'Ensure window locks are secure and functional', priority: 'medium' },
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
       ],
-      'bedroom_1': commonItems,
-      'bedroom_2': commonItems,
-      'bedroom_3': commonItems,
-      'bedroom_4': commonItems,
-      'bedroom_5': commonItems,
-      'guest_bedroom': commonItems,
-      'kids_bedroom': commonItems,
+      'bedroom_1': [...commonItems,
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
+      ],
+      'bedroom_2': [...commonItems,
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
+      ],
+      'bedroom_3': [...commonItems,
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
+      ],
+      'bedroom_4': [...commonItems,
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
+      ],
+      'bedroom_5': [...commonItems,
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
+      ],
+      'guest_bedroom': [...commonItems,
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
+      ],
+      'kids_bedroom': [...commonItems,
+        { itemName: 'Wardrobe and Robe Storage', category: 'fixtures', description: 'Check wardrobe doors, tracks, shelving, and storage condition', priority: 'low' },
+        { itemName: 'Data Point', category: 'electrical', description: 'Inspect data/network point condition and connectivity', priority: 'low' }
+      ],
       
       // Bathrooms
       'main_bathroom': [...commonItems,
@@ -2039,6 +2062,94 @@ export class DatabaseStorage implements IStorage {
         }
       ],
       
+      // Windows Exterior
+      'windows_exterior': [
+        {
+          itemName: 'Window Frame',
+          category: 'structural',
+          description: 'Inspect exterior window frame condition, paint/coating, corrosion or rot',
+          priority: 'medium',
+          frequency: 'biannual',
+          checklistPoints: [
+            'Check frame for corrosion, rot, or warping',
+            'Inspect paint or powder coating for peeling or fading',
+            'Check frame joints and corners for gaps',
+            'Look for signs of water ingress around the frame',
+            'Test that frame is rigid and firmly fixed to wall'
+          ]
+        },
+        {
+          itemName: 'Glass',
+          category: 'structural',
+          description: 'Check for cracks, chips, broken seals on double glazing',
+          priority: 'medium',
+          frequency: 'biannual',
+          checklistPoints: [
+            'Inspect glass panes for cracks or chips',
+            'Check double-glazing units for fogging or failed seals',
+            'Look for condensation between panes',
+            'Check glazing beads and putty are intact',
+            'Verify glass is safety-rated where required'
+          ]
+        },
+        {
+          itemName: 'Fly Screens',
+          category: 'fixtures',
+          description: 'Inspect fly screen mesh condition, frame, fit, and security',
+          priority: 'low',
+          frequency: 'biannual',
+          checklistPoints: [
+            'Check mesh for holes, tears, or corrosion',
+            'Inspect screen frame for bends or damage',
+            'Test screen fits correctly in opening',
+            'Check security latches or clips are working',
+            'Look for gaps around the perimeter of the screen'
+          ]
+        },
+        {
+          itemName: 'Weatherseal & Architrave',
+          category: 'structural',
+          description: 'Check weatherstrip seals, sill sealant, and architrave condition',
+          priority: 'medium',
+          frequency: 'biannual',
+          checklistPoints: [
+            'Inspect rubber or foam weatherstrip for compression or gaps',
+            'Check sill sealant for cracking or pulling away',
+            'Inspect architrave for damage, paint, or separation',
+            'Look for daylight gaps around window edges',
+            'Test that closed window forms an airtight seal'
+          ]
+        },
+        {
+          itemName: 'Caulking & Sealant',
+          category: 'structural',
+          description: 'Inspect all exterior sealant for gaps, cracking, or deterioration',
+          priority: 'medium',
+          frequency: 'biannual',
+          checklistPoints: [
+            'Check sealant bead for cracking or shrinkage',
+            'Look for gaps between sealant and surface',
+            'Inspect head and jamb sealant lines',
+            'Check flashing tape or wet area sealant around reveals',
+            'Note any areas needing reseal or repointing'
+          ]
+        },
+        {
+          itemName: 'Window Sill',
+          category: 'structural',
+          description: 'Check sill condition, slope, paint/coating, and water ingress signs',
+          priority: 'medium',
+          frequency: 'biannual',
+          checklistPoints: [
+            'Inspect sill surface for cracking or deterioration',
+            'Check sill has adequate slope for water runoff',
+            'Look for paint peeling or coating failure',
+            'Check for water staining or mould growth below sill',
+            'Inspect sill-to-wall junction for sealant integrity'
+          ]
+        }
+      ],
+
       // Pool & Outdoor
       'pool': [
         {
@@ -2257,13 +2368,13 @@ export class DatabaseStorage implements IStorage {
     // Define which items are appropriate for each room type
     const roomTypeRestrictions: { [key: string]: string[] } = {
       // Interior rooms that can have electrical and safety items
-      'master_bedroom': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Ceiling Fan', 'Window Locks', 'Air Conditioning', 'Windows', 'Window Furnishings'],
-      'bedroom_1': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning'],
-      'bedroom_2': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning'],
-      'bedroom_3': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning'],
-      'bedroom_4': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning'],
-      'guest_bedroom': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning'],
-      'kids_bedroom': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning'],
+      'master_bedroom': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Ceiling Fan', 'Window Locks', 'Air Conditioning', 'Windows', 'Window Furnishings', 'Wardrobe and Robe Storage', 'Data Point'],
+      'bedroom_1': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning', 'Wardrobe and Robe Storage', 'Data Point'],
+      'bedroom_2': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning', 'Wardrobe and Robe Storage', 'Data Point'],
+      'bedroom_3': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning', 'Wardrobe and Robe Storage', 'Data Point'],
+      'bedroom_4': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning', 'Wardrobe and Robe Storage', 'Data Point'],
+      'guest_bedroom': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning', 'Wardrobe and Robe Storage', 'Data Point'],
+      'kids_bedroom': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Windows', 'Window Furnishings', 'Air Conditioning', 'Wardrobe and Robe Storage', 'Data Point'],
       
       'main_bathroom': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Vanity Tap & Flexi Hoses', 'Toilet & Flexi Hose', 'Shower', 'Bath', 'Exhaust Fan', 'Windows', 'Air Conditioning'],
       'master_ensuite': ['Smoke Detector', 'Light Switch', 'Power Points (GPO)', 'Vanity Tap & Flexi Hoses', 'Toilet & Flexi Hose', 'Shower', 'Exhaust Fan', 'Windows', 'Air Conditioning'],
@@ -2291,6 +2402,7 @@ export class DatabaseStorage implements IStorage {
       'patio': ['Patio Surface', 'Patio Drainage', 'Outdoor Lighting', 'Outdoor Power Outlets'],
       'balcony': ['Balcony Railings', 'Balcony Structure', 'Outdoor Lighting', 'Outdoor Power Outlets'],
       'pool': ['Pool Pump', 'Pool Filter', 'Pool Chlorinator', 'Water Chemistry', 'Pool Safety Barriers', 'Pool Heater', 'Pool Lighting', 'Pool Surface and Tiles', 'Pool Skimmer and Returns', 'Pool Cleaner'],
+      'windows_exterior': ['Window Frame', 'Glass', 'Fly Screens', 'Weatherseal & Architrave', 'Caulking & Sealant', 'Window Sill'],
       'power_box': ['Electrical Panel Safety Inspection', 'RCD/Safety Switch Testing', 'Circuit Breaker Labeling', 'Panel Condition Assessment']
     };
 
@@ -3631,7 +3743,7 @@ export class DatabaseStorage implements IStorage {
     // Define outdoor/exterior room types that should NOT get indoor electrical items
     const exteriorRoomTypes = [
       'pool', 'deck', 'patio', 'balcony', 'garden', 'courtyard', 'roof_terrace',
-      'veranda', 'pergola', 'gazebo', 'carport', 'driveway', 'roof', 'gutters'
+      'veranda', 'pergola', 'gazebo', 'carport', 'driveway', 'roof', 'gutters', 'windows_exterior'
     ];
 
     // Default outdoor items for exterior rooms without specific templates
@@ -3796,6 +3908,33 @@ export class DatabaseStorage implements IStorage {
             'Check restrictor mechanism is secure and functional',
             'Inspect for damage or tampering',
             'Confirm adult release mechanism works correctly'
+          ]
+        },
+        {
+          category: 'fixtures',
+          itemName: 'Wardrobe and Robe Storage',
+          description: 'Check wardrobe doors, tracks, shelving, and storage condition',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test wardrobe doors open and close smoothly',
+            'Check sliding door tracks are clean and functional',
+            'Inspect shelving for stability and damage',
+            'Check hanging rails are secure',
+            'Look for moisture or mould inside wardrobe'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Data Point',
+          description: 'Inspect data/network point condition and connectivity',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Check data point plate is secure and undamaged',
+            'Test connectivity if possible',
+            'Inspect for exposed wiring',
+            'Check labelling is correct'
           ]
         }
       ];
