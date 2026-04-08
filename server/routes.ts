@@ -480,21 +480,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already exists" });
       }
 
-      // Create a personal agency for new users who don't have one
-      const { confirmPassword, ...userToCreate } = userData;
-      let finalAgencyId = userToCreate.agencyId;
-      if (!finalAgencyId) {
-        const firstName = userToCreate.firstName || '';
-        const lastName = userToCreate.lastName || '';
-        const personalAgency = await storage.createAgency({
-          name: `${firstName} ${lastName}${userToCreate.userType === 'private' ? "'s Properties" : "'s Maintenance"}`.trim(),
-          email: userToCreate.email,
-          isActive: true
-        });
-        finalAgencyId = personalAgency.id;
-      }
+      // Always create a fresh personal agency — never use a client-provided agencyId
+      const { confirmPassword, agencyId: _ignoredAgencyId, ...userToCreate } = userData as any;
+      const firstName = userToCreate.firstName || '';
+      const lastName = userToCreate.lastName || '';
+      const personalAgency = await storage.createAgency({
+        name: `${firstName} ${lastName}${userToCreate.userType === 'private' ? "'s Properties" : "'s Maintenance"}`.trim(),
+        email: userToCreate.email,
+        isActive: true
+      });
+      const finalAgencyId = personalAgency.id;
 
-      // Create new user with hashed password and agencyId
+      // Create new user with hashed password and server-assigned agencyId
       const hashedPassword = await bcrypt.hash(userToCreate.password, 10);
       const newUser = await storage.createUser({
         ...userToCreate,
@@ -649,16 +646,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email already exists" });
       }
 
-      // If user doesn't have an agencyId (private/maintenance users), create a personal agency
-      let finalAgencyId = userData.agencyId;
-      if (!finalAgencyId) {
-        const personalAgency = await storage.createAgency({
-          name: `${userData.firstName} ${userData.lastName}${userData.userType === 'private' ? "'s Properties" : "'s Maintenance"}`,
-          email: userData.email,
-          isActive: true
-        });
-        finalAgencyId = personalAgency.id;
-      }
+      // Always create a fresh personal agency — never use a client-provided agencyId
+      const personalAgency = await storage.createAgency({
+        name: `${userData.firstName} ${userData.lastName}${userData.userType === 'private' ? "'s Properties" : "'s Maintenance"}`,
+        email: userData.email,
+        isActive: true
+      });
+      const finalAgencyId = personalAgency.id;
 
       // Create new user with agencyId and hashed password
       const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -1468,18 +1462,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Works even when the client has a stale/null agencyId in localStorage.
   app.get("/api/my-properties", async (req: AuthenticatedRequest, res) => {
     try {
-      let agencyId = req.user!.agencyId;
+      // Re-fetch user fresh from DB to avoid stale agencyId from auth cache
+      const freshUser = await storage.getUser(req.user!.id);
+      if (!freshUser) return res.status(401).json({ message: "User not found" });
+
+      let agencyId = freshUser.agencyId;
       if (!agencyId) {
-        const user = req.user!;
+        // Create agency only if still missing after fresh fetch (prevents race condition)
         const newAgency = await storage.createAgency({
-          name: `${user.name || user.email}'s Properties`,
-          email: user.email,
-          phone: '',
-          address: '',
+          name: `${freshUser.firstName || freshUser.email}'s Properties`,
+          email: freshUser.email,
           isActive: true,
         });
-        await storage.updateUser(user.id, { agencyId: newAgency.id });
-        agencyId = newAgency.id;
+        // Only update if still null (double-check to avoid overwrite race)
+        const refetch = await storage.getUser(freshUser.id);
+        if (!refetch?.agencyId) {
+          await storage.updateUser(freshUser.id, { agencyId: newAgency.id });
+          agencyId = newAgency.id;
+        } else {
+          agencyId = refetch.agencyId;
+        }
       }
       const properties = await storage.getPropertiesByAgency(agencyId);
       res.json(properties);

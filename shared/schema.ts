@@ -809,7 +809,7 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const registerSchema = insertUserSchema.extend({
+export const registerSchema = insertUserSchema.omit({ agencyId: true }).extend({
   confirmPassword: z.string().optional(),
 });
 
@@ -821,7 +821,7 @@ export const signupSchema = z.object({
   password: z.string().min(6),
   userType: z.enum(['agency', 'maintenance_company', 'private']),
   role: z.string(),
-  agencyId: z.number().nullable().optional(),
+  // agencyId intentionally excluded — server always creates a fresh agency on signup
 });
 
 export const forgotPasswordSchema = z.object({
