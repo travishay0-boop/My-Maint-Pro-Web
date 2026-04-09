@@ -2285,9 +2285,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Property Room routes
-  app.get("/api/properties/:propertyId/rooms", async (req: AuthenticatedRequest, res) => {
+  app.get("/api/properties/:propertyId/rooms", authenticateUser, async (req: AuthenticatedRequest, res) => {
     try {
       const propertyId = parseInt(req.params.propertyId);
+      const property = await storage.getProperty(propertyId);
+      if (!property) return res.status(404).json({ message: "Property not found" });
+      if (property.agencyId !== req.user!.agencyId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const rooms = await storage.getPropertyRooms(propertyId);
       res.json(rooms);
     } catch (error) {
