@@ -2951,20 +2951,63 @@ export class DatabaseStorage implements IStorage {
         },
         {
           category: 'safety',
-          itemName: 'Pool Safety Barriers',
-          description: 'Inspect pool fencing and safety barriers for compliance',
+          itemName: 'Pool Fence & Gate Compliance',
+          description: 'Professional inspection of pool fencing and safety barriers for compliance — licensed inspector required',
           frequency: 'quarterly',
           priority: 'critical',
+          inspectionType: 'professional' as const,
           photoRequired: true,
           complianceStandard: 'AS 1926.1 - Annual check',
           complianceYears: 1,
           checklistPoints: [
             'Check fence height (minimum 1.2m)',
             'Test self-closing gate operation',
-            'Verify self-latching mechanism',
-            'Check for climbing hazards near fence',
-            'Inspect fence integrity and gaps',
-            'Take photo of gate and latch'
+            'Verify self-latching mechanism works and latch is childproof',
+            'Check for climbing hazards within 900mm of fence',
+            'Inspect fence integrity and gaps — no gap >100mm',
+            'Take photo of gate, latch, and fence perimeter'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Pool Drain Safety Cover',
+          description: 'Inspect pool drain covers for entrapment hazard compliance',
+          frequency: 'biannual',
+          priority: 'critical',
+          checklistPoints: [
+            'Check all drain covers are present and secure',
+            'Verify drain covers are not cracked or broken',
+            'Confirm covers comply with anti-entrapment standards',
+            'Test covers cannot be easily removed by children',
+            'Check suction outlet covers for approved type'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'CPR Signage',
+          description: 'Verify CPR resuscitation sign is present, current, and visible poolside',
+          frequency: 'biannual',
+          priority: 'critical',
+          checklistPoints: [
+            'Confirm CPR sign is displayed prominently at poolside',
+            'Verify sign is weatherproof and legible',
+            'Check sign is current edition with correct instructions',
+            'Ensure sign is within eyeline of pool area',
+            'Take photo showing sign location and legibility'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Pool Surroundings & Decking Condition',
+          description: 'Inspect pool surrounds, paving, and decking for safety and condition',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check for cracked, loose, or uneven paving',
+            'Inspect decking for splinters, rot, or loose boards',
+            'Look for slip hazards when wet',
+            'Check coping stones are secure',
+            'Inspect hose bibs and outdoor tap area for leaks'
           ]
         },
         {
@@ -3103,44 +3146,125 @@ export class DatabaseStorage implements IStorage {
       media_room: [
         {
           category: 'electrical',
-          itemName: 'Audio Visual Equipment',
-          description: 'Test and inspect AV equipment and connections',
-          frequency: 'quarterly',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
+          frequency: 'biannual',
           priority: 'medium',
           checklistPoints: [
-            'Test all input/output connections',
-            'Check remote control operation',
-            'Inspect cable management',
-            'Test audio quality and volume',
-            'Check for overheating equipment'
+            'Test all light switches for proper operation',
+            'Check dimmer controls if present',
+            'Inspect switch plates for damage',
+            'Verify correct wiring'
           ]
         },
         {
           category: 'electrical',
-          itemName: 'Projector and Screen',
-          description: 'Inspect projection equipment and screen condition',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all power outlets with tester',
+            'Check for loose outlets',
+            'Inspect for damage or scorch marks',
+            'Verify GFCI protection where required'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector',
+          description: 'Test smoke detector functionality, battery, and verify age',
+          frequency: 'monthly',
+          priority: 'critical',
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify manufacture date on unit (replace if 10+ years old)',
+            'Clean detector housing and vents',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Air Conditioning',
+          description: 'Test air conditioning operation and filters',
           frequency: 'quarterly',
           priority: 'medium',
           checklistPoints: [
-            'Clean projector lens and filters',
-            'Test image quality and focus',
-            'Check screen for tears or stains',
-            'Inspect mounting hardware',
-            'Test remote control functions'
+            'Test cooling and heating modes',
+            'Check and clean filters',
+            'Listen for unusual noises',
+            'Check remote control operation',
+            'Inspect outdoor unit if accessible'
+          ]
+        },
+        {
+          category: 'general',
+          itemName: 'Acoustics',
+          description: 'Inspect acoustic panels, treatments, and sound insulation',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check acoustic panels are securely mounted',
+            'Inspect for damage or wear to acoustic treatments',
+            'Verify ceiling tiles or panels are in place',
+            'Check door seals for sound leakage',
+            'Inspect any bass traps or diffusers'
+          ]
+        },
+        {
+          category: 'furnishings',
+          itemName: 'Window Furnishings',
+          description: 'Check condition of curtains, blinds, and blackout treatments',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test blind or curtain operation',
+            'Check blackout effectiveness',
+            'Inspect mounting brackets',
+            'Look for damage or staining'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect walls and ceiling for cracks, damage, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect paint and acoustic finish condition',
+            'Check for sagging ceiling areas or loose panels',
+            'Note any impact damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect flooring for damage, wear, or trip hazards',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for scratches, stains, or damage',
+            'Identify any trip hazards from cable management',
+            'Check carpet condition and fixings',
+            'Inspect skirting boards for damage'
           ]
         },
         {
           category: 'hvac',
-          itemName: 'Room Acoustics',
-          description: 'Check sound dampening and acoustic treatments',
-          frequency: 'annual',
-          priority: 'low',
+          itemName: 'Ventilation',
+          description: 'Check ventilation adequacy for the occupancy load of the room',
+          frequency: 'biannual',
+          priority: 'medium',
           checklistPoints: [
-            'Inspect acoustic panels condition',
-            'Check for sound leakage',
-            'Test speaker placement',
-            'Verify carpet and fabric condition',
-            'Check door sealing'
+            'Test exhaust fan or mechanical ventilation is operational',
+            'Check air conditioning filters are clean',
+            'Verify adequate fresh air flow for expected occupancy',
+            'Check for condensation buildup on walls or ceiling',
+            'Inspect vent covers for blockages or damage'
           ]
         }
       ],
@@ -3188,6 +3312,48 @@ export class DatabaseStorage implements IStorage {
             'Check mirror mounting security',
             'Verify first aid kit availability'
           ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect gym walls and ceiling for cracks, damage, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect mirror fixings and backing condition',
+            'Check for sagging ceiling areas',
+            'Note any impact damage from equipment'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect gym flooring for damage, wear, or hazards under equipment',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check rubber matting for tears or lifting edges',
+            'Look for compression damage under heavy equipment',
+            'Inspect subfloor for squeaking or soft spots',
+            'Check for moisture under matting',
+            'Look for trip hazards at mat edges'
+          ]
+        },
+        {
+          category: 'hvac',
+          itemName: 'Ventilation & Air Circulation',
+          description: 'Check ventilation adequacy for exercise load in the space',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Test exhaust fan or mechanical ventilation is operational',
+            'Check air conditioning filters are clean',
+            'Verify adequate fresh air flow for occupancy load',
+            'Check for condensation or humidity buildup on walls',
+            'Test dehumidifier if present'
+          ]
         }
       ],
 
@@ -3195,44 +3361,157 @@ export class DatabaseStorage implements IStorage {
       sauna: [
         {
           category: 'electrical',
-          itemName: 'Sauna Heater',
-          description: 'Inspect electric or infrared heating elements',
-          frequency: 'quarterly',
-          priority: 'critical',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
+          frequency: 'biannual',
+          priority: 'medium',
           checklistPoints: [
-            'Test heater operation and controls',
-            'Check temperature accuracy',
-            'Inspect heating elements',
-            'Test timer functions',
-            'Check electrical connections'
+            'Test all light switches for proper operation',
+            'Check for flickering or dimming',
+            'Inspect switch plates for damage',
+            'Verify correct wiring'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all power outlets with tester',
+            'Check for loose outlets',
+            'Inspect for damage or scorch marks',
+            'Verify GFCI protection where required'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector',
+          description: 'Test smoke detector functionality — Professional inspection required',
+          frequency: 'monthly',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify manufacture date (replace if 10+ years old)',
+            'Clean detector housing and vents',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
+          category: 'mechanical',
+          itemName: 'Sauna Heater',
+          description: 'Inspect sauna heater condition and operation',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Test heater reaches operating temperature',
+            'Check heating elements for damage',
+            'Inspect heater mounting and clearances',
+            'Verify temperature gauge accuracy',
+            'Check electrical connections are secure and dry'
           ]
         },
         {
           category: 'structural',
           itemName: 'Wood Condition',
-          description: 'Inspect cedar or other wood surfaces',
+          description: 'Inspect timber benches, walls, and flooring for deterioration',
           frequency: 'biannual',
           priority: 'medium',
           checklistPoints: [
-            'Check for warping or cracking',
-            'Look for staining or discoloration',
-            'Inspect bench stability',
-            'Check wood treatment condition',
-            'Test door operation and sealing'
+            'Check for cracking, splitting, or warping of timber',
+            'Look for mould or black staining',
+            'Inspect joints and fasteners for corrosion',
+            'Check wood for splinters or rough surfaces',
+            'Verify wood treatment is intact'
           ]
         },
         {
           category: 'hvac',
           itemName: 'Ventilation System',
-          description: 'Check sauna ventilation and air circulation',
-          frequency: 'quarterly',
+          description: 'Check sauna ventilation for proper airflow and safety',
+          frequency: 'biannual',
           priority: 'high',
           checklistPoints: [
-            'Test exhaust fan operation',
-            'Check air intake vents',
-            'Inspect ductwork for blockages',
-            'Test humidity control',
-            'Check for proper air flow'
+            'Test ventilation duct/vent is unobstructed',
+            'Verify fresh air intake is functioning',
+            'Check exhaust airflow is adequate',
+            'Inspect vent cover condition',
+            'Confirm ventilation meets manufacturer specs'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Safety Thermostat & Timer',
+          description: 'Check safety thermostat and auto-shutoff timer — Professional inspection required',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Test auto-shutoff timer activates at set time',
+            'Verify safety thermostat cuts power at maximum temperature',
+            'Check thermostat calibration against thermometer',
+            'Test manual override switch',
+            'Record maximum temperature setting'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Door Seal Condition',
+          description: 'Inspect sauna door seal for heat retention and safe operation',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check door seal is intact around full perimeter',
+            'Test door closes tightly without gaps',
+            'Verify door handle is heat-resistant and functional',
+            'Check door hinges are secure',
+            'Confirm door can be opened from inside at all times'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Bench & Seating Condition',
+          description: 'Inspect benches for structural integrity and safety',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test benches for stability under load',
+            'Check mounting brackets and fixings are secure',
+            'Inspect for splinters, cracks, or sharp edges',
+            'Verify bench height and spacing is safe',
+            'Look for water damage or delamination'
+          ]
+        },
+        {
+          category: 'mechanical',
+          itemName: 'Heater Rocks Condition',
+          description: 'Inspect sauna heater rocks for condition and safe arrangement',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check rocks are not cracked or crumbling',
+            'Verify rocks are arranged per manufacturer specifications',
+            'Remove any debris or foreign objects from rock bed',
+            'Check rock bed is not blocking heater elements',
+            'Replace any damaged or deteriorated rocks'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Electrical Safety Check',
+          description: 'Electrical inspection of sauna wiring and components — Professional required due to high heat environment',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Inspect all wiring for heat damage or deterioration',
+            'Check all electrical connections are secure',
+            'Verify RCD/safety switch protection is in place',
+            'Test insulation resistance of heater elements',
+            'Confirm installation complies with electrical code'
           ]
         }
       ],
@@ -3326,65 +3605,149 @@ export class DatabaseStorage implements IStorage {
             'Check for water ingress or corrosion',
             'Verify proper grounding'
           ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Rust & Corrosion Inspection',
+          description: 'Inspect patio metalwork, fixings, and frames for rust and corrosion',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check metal posts, brackets, and gates for rust',
+            'Inspect pergola or shade structure fixings for corrosion',
+            'Look for rust weeping from anchor bolts',
+            'Check balustrades or handrails for oxidation',
+            'Document and treat any corrosion found'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Fastener Integrity',
+          description: 'Inspect patio structural bolts, screws, and fixings',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check pergola post bolts and joist hangers are tight',
+            'Inspect shade sail or awning anchor fixings',
+            'Look for missing, loose, or corroded fasteners',
+            'Check furniture anchor points if fixed',
+            'Verify all structural connections are secure'
+          ]
         }
       ],
 
       // Balcony-specific items
       balcony: [
         {
-          category: 'safety',
-          itemName: 'Balcony Railings',
-          description: 'Inspect railing height, stability, and safety features',
+          category: 'structural',
+          itemName: 'Floor & Surface Condition',
+          description: 'Inspect balcony floor surface for cracks, spalling, or trip hazards',
           frequency: 'quarterly',
           priority: 'critical',
           checklistPoints: [
-            'Test railing stability and height',
-            'Check baluster spacing and security',
-            'Inspect for rust or corrosion',
-            'Verify minimum height requirements',
-            'Test railing attachment points'
+            'Check for cracked, spalled, or loose tiles/concrete',
+            'Look for uneven surfaces or trip hazards',
+            'Inspect anti-slip surface condition',
+            'Check grout joints for deterioration',
+            'Note any areas of deflection or movement'
           ]
         },
         {
           category: 'structural',
-          itemName: 'Balcony Structure',
-          description: 'Inspect structural integrity and condition',
+          itemName: 'Waterproofing & Drainage',
+          description: 'Inspect balcony waterproofing membrane and drainage for function',
           frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check drainage outlet is unobstructed',
+            'Look for pooling water after rain or test',
+            'Inspect waterproofing membrane for cracking or bubbling',
+            'Check falls are directing water toward drain',
+            'Inspect flashings and upstands at wall junctions'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Rust & Corrosion Inspection',
+          description: 'Inspect balcony structure and fixings for rust and corrosion',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check structural steel or reinforcement for rust staining',
+            'Inspect metal brackets, anchors, and fixings for corrosion',
+            'Look for concrete cancer (rust-stained cracking)',
+            'Check aluminium or steel door frames for oxidation',
+            'Document and photograph any corrosion found'
+          ]
+        },
+        {
+          category: 'windows_doors',
+          itemName: 'Sliding Door Condition',
+          description: 'Inspect sliding door operation, tracks, seals, and locks',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test door slides smoothly on tracks',
+            'Clean and lubricate tracks if needed',
+            'Check door lock engages securely',
+            'Inspect weather seals and brush strips',
+            'Verify security bar or anti-lift device is present'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Fastener Integrity',
+          description: 'Inspect all visible bolts, screws, and structural fasteners',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check balustrade post fixings are tight and corrosion-free',
+            'Inspect anchor bolts securing balcony structure to building',
+            'Look for missing or replaced fasteners',
+            'Check for rust weeping from concealed fixings',
+            'Document any loose or damaged fasteners found'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Balustrade & Safety Rails',
+          description: 'Check balustrade height, stability, and baluster spacing for safety compliance',
+          frequency: 'quarterly',
           priority: 'critical',
           checklistPoints: [
-            'Check for structural movement',
-            'Inspect surface for damage or wear',
-            'Look for cracks or damage',
-            'Test drainage systems',
-            'Check attachment to building'
+            'Test balustrade stability by applying lateral force',
+            'Verify balustrade height meets minimum 1000mm requirement',
+            'Check baluster spacing does not exceed 125mm',
+            'Inspect for cracked, damaged, or missing balusters',
+            'Check top rail is secure and continuous'
           ]
         },
         {
           category: 'electrical',
           itemName: 'Outdoor Lighting',
-          description: 'Inspect balcony lighting fixtures and wiring',
-          frequency: 'quarterly',
-          priority: 'medium',
+          description: 'Inspect balcony lighting fixtures for condition and weatherproofing',
+          frequency: 'biannual',
+          priority: 'low',
           checklistPoints: [
-            'Test all balcony lights are functional',
-            'Check light fixtures for water damage',
-            'Inspect wiring and connections',
-            'Check for exposed wires or damaged cables',
-            'Verify switch operation'
+            'Test all lights are functional',
+            'Check fixtures have appropriate outdoor IP rating',
+            'Inspect for water ingress or corrosion',
+            'Check wiring is protected and not exposed',
+            'Test sensor or timer if fitted'
           ]
         },
         {
           category: 'electrical',
-          itemName: 'Outdoor Power Outlets',
-          description: 'Inspect outdoor GPO/power outlets for safety',
-          frequency: 'quarterly',
-          priority: 'high',
+          itemName: 'Outdoor Power Outlet',
+          description: 'Inspect outdoor GPO for safety, weatherproofing, and RCD protection',
+          frequency: 'biannual',
+          priority: 'medium',
           checklistPoints: [
-            'Test outlet operation with tester',
-            'Check GFCI/RCD protection is functional',
-            'Inspect weatherproof covers',
-            'Check for water ingress or corrosion',
-            'Verify proper grounding'
+            'Test outlet operation with socket tester',
+            'Verify RCD/safety switch protection is active',
+            'Check weatherproof cover closes fully',
+            'Inspect for water ingress, staining, or corrosion',
+            'Verify outlet is rated for outdoor use'
           ]
         }
       ],
@@ -3460,6 +3823,20 @@ export class DatabaseStorage implements IStorage {
             'Check for corrosion',
             'Verify proper grounding'
           ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Rust & Corrosion Inspection',
+          description: 'Inspect courtyard metalwork, gates, and fixtures for rust and corrosion',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check gate hinges, latches, and frames for rust',
+            'Inspect metal furniture fixings or built-in BBQ frames',
+            'Look for rust staining on paving from metal items',
+            'Check wall-mounted fixtures for corrosion',
+            'Document and treat any corrosion found'
+          ]
         }
       ],
 
@@ -3533,6 +3910,34 @@ export class DatabaseStorage implements IStorage {
             'Inspect wiring',
             'Test timers and sensors',
             'Clean fixtures'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Rust & Corrosion Inspection',
+          description: 'Inspect roof terrace metalwork, barriers, and fixings for rust and corrosion',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check all railing posts and brackets for rust or oxidation',
+            'Inspect structural steel connections for corrosion',
+            'Look for rust weeping from embedded fixings in concrete',
+            'Check aluminium framing for pitting or oxidation',
+            'Document and photograph any corrosion found'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Fastener Integrity',
+          description: 'Inspect roof terrace structural bolts, anchors, and fixings',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check all balustrade post anchor bolts are tight',
+            'Inspect parapet wall fixings and copings',
+            'Verify skylight or roof access hatch fixings are secure',
+            'Look for any missing or replaced fasteners',
+            'Test railing sections for movement at fixing points'
           ]
         },
         {
@@ -3628,31 +4033,174 @@ export class DatabaseStorage implements IStorage {
       // Garage-specific items
       garage: [
         {
-          category: 'mechanical',
+          category: 'electrical',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all light switches for proper operation',
+            'Check for flickering or dimming',
+            'Inspect switch plates for damage',
+            'Verify correct wiring'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all power outlets with tester',
+            'Check for loose outlets',
+            'Inspect for damage or scorch marks',
+            'Verify GFCI protection where required'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector',
+          description: 'Test smoke detector functionality, battery, and verify age — Professional inspection required',
+          frequency: 'monthly',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify manufacture date on unit (replace if 10+ years old)',
+            'Clean detector housing and vents',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Carbon Monoxide Detector',
+          description: 'Test carbon monoxide detector — required in all garages with attached living spaces',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify CO detector is within 5 years of manufacture date',
+            'Confirm placement is within 3m of sleeping areas',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Fire Extinguisher Inspection',
+          description: 'Inspect fire extinguisher condition, charge, and accessibility — Professional service required',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Verify extinguisher is mounted and accessible',
+            'Check pressure gauge is in green zone',
+            'Inspect pin and tamper seal are intact',
+            'Check for physical damage or corrosion',
+            'Confirm annual service tag is current'
+          ]
+        },
+        {
+          category: 'electrical',
           itemName: 'Garage Door Opener',
-          description: 'Test automatic garage door system and safety features',
+          description: 'Test garage door opener operation and safety features',
           frequency: 'quarterly',
           priority: 'high',
           checklistPoints: [
-            'Test door opening/closing operation',
-            'Check safety reverse mechanism',
+            'Test door opens and closes smoothly',
+            'Check auto-reverse safety feature',
             'Inspect door tracks and rollers',
             'Test remote control operation',
-            'Check emergency release function'
+            'Check door seal condition'
+          ]
+        },
+        {
+          category: 'mechanical',
+          itemName: 'Garage Door Spring & Cable Condition',
+          description: 'Inspect garage door springs, cables, and counterbalance system',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Visually inspect torsion or extension springs for wear or corrosion',
+            'Check cables for fraying, kinking, or damage',
+            'Test door balance — disconnect opener and lift by hand to mid-point',
+            'Listen for unusual grinding or popping sounds during operation',
+            'Do NOT attempt repairs — springs under high tension, licensed tech required'
+          ]
+        },
+        {
+          category: 'security',
+          itemName: 'Security & Door Locks',
+          description: 'Check garage door locks and entry security',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test manual lock on garage door',
+            'Check internal access door lock and deadbolt',
+            'Inspect door between garage and living space for fire rating',
+            'Verify auto-lock feature on opener is enabled',
+            'Check for gaps around door frames'
           ]
         },
         {
           category: 'structural',
-          itemName: 'Garage Floor',
-          description: 'Inspect concrete floor for cracks and oil stains',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect garage walls and ceiling for cracks, damage, or fire barrier integrity',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for cracks or structural damage',
+            'Inspect fire-rated wall/ceiling for any penetrations or damage',
+            'Look for water stains indicating roof or plumbing leaks',
+            'Check for mould or damp patches',
+            'Inspect eaves and soffits visible from inside'
+          ]
+        },
+        {
+          category: 'plumbing',
+          itemName: 'Water Drainage',
+          description: 'Check garage floor drainage for blockages and proper function',
           frequency: 'biannual',
           priority: 'medium',
           checklistPoints: [
-            'Check for floor cracks or settling',
-            'Inspect for oil stain penetration',
-            'Look for water damage or pooling',
-            'Check floor levelness',
-            'Inspect floor drain functionality'
+            'Check floor drain is clear and unobstructed',
+            'Test drainage flow with small amount of water',
+            'Look for pooling water on floor',
+            'Inspect drain grate condition',
+            'Check for oil or chemical contamination of drain'
+          ]
+        },
+        {
+          category: 'plumbing',
+          itemName: 'Hot Water System',
+          description: 'Inspect hot water system for condition and safety',
+          frequency: 'annual',
+          priority: 'high',
+          checklistPoints: [
+            'Check for visible leaks',
+            'Test relief valve operation',
+            'Check temperature setting',
+            'Inspect anode rod condition',
+            'Verify adequate clearance'
+          ]
+        },
+        {
+          category: 'gas',
+          itemName: 'Gas Appliance Inspection',
+          description: 'Gas appliance/hot water inspection by licensed gas fitter - certificate required',
+          frequency: 'biannual',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          photoRequired: true,
+          checklistPoints: [
+            'Full inspection of gas connections by licensed gas fitter',
+            'Inspect gas hot water system connections',
+            'Check gas bottle connections and regulator',
+            'Leak test with approved equipment',
+            'Issue Gas Safety Certificate'
           ]
         }
       ],
@@ -3661,16 +4209,126 @@ export class DatabaseStorage implements IStorage {
       study: [
         {
           category: 'electrical',
-          itemName: 'Office Equipment Power',
-          description: 'Inspect electrical outlets and data connections',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
           frequency: 'biannual',
           priority: 'medium',
           checklistPoints: [
-            'Test all power outlets',
-            'Check USB charging ports',
-            'Inspect network/data connections',
-            'Test surge protection devices',
-            'Check cable management'
+            'Test all light switches for proper operation',
+            'Check for flickering or dimming',
+            'Inspect switch plates for damage',
+            'Verify correct wiring'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all power outlets with tester',
+            'Check for loose outlets',
+            'Inspect for damage or scorch marks',
+            'Verify GFCI protection where required'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector',
+          description: 'Test smoke detector functionality, battery, and verify age',
+          frequency: 'monthly',
+          priority: 'critical',
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify manufacture date on unit (replace if 10+ years old)',
+            'Clean detector housing and vents',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
+          category: 'windows_doors',
+          itemName: 'Windows',
+          description: 'Inspect window condition, operation, locks, and seals',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test window opens and closes smoothly',
+            'Check window locks are secure',
+            'Inspect seals and weatherstripping',
+            'Look for cracks or damage to glass',
+            'Check for condensation between panes'
+          ]
+        },
+        {
+          category: 'furnishings',
+          itemName: 'Window Furnishings',
+          description: 'Check condition of curtains, blinds, and window treatments',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test blind or curtain operation',
+            'Check cord condition and safety',
+            'Inspect mounting brackets',
+            'Look for damage or staining',
+            'Check child safety compliance'
+          ]
+        },
+        {
+          category: 'general',
+          itemName: 'Cabinetry',
+          description: 'Inspect built-in cabinets, shelving, and joinery',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check all hinges and handles for tightness',
+            'Test doors and drawers open and close smoothly',
+            'Inspect for damage, scratches, or wear',
+            'Check shelf supports are secure',
+            'Verify soft-close mechanisms if present'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect walls and ceiling for cracks, damage, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect paint condition',
+            'Check for sagging ceiling areas',
+            'Note any impact damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect flooring for damage, wear, or trip hazards',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for scratches, stains, or damage from furniture',
+            'Identify any trip hazards from cables or equipment',
+            'Check carpet condition and fixings',
+            'Inspect skirting boards for damage'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Air Conditioning/Ventilation',
+          description: 'Test air conditioning system and verify adequate ventilation for the workspace',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test cooling and heating modes',
+            'Check filters and clean if needed',
+            'Verify thermostat operation',
+            'Confirm adequate fresh air for occupancy',
+            'Check for unusual noises or odours'
           ]
         }
       ],
@@ -3710,31 +4368,157 @@ export class DatabaseStorage implements IStorage {
       // Basement-specific items
       basement: [
         {
+          category: 'electrical',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all light switches for proper operation',
+            'Check for flickering or dimming',
+            'Inspect switch plates for damage',
+            'Verify correct wiring'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all power outlets with tester',
+            'Check for loose outlets',
+            'Inspect for damage or scorch marks',
+            'Verify GFCI protection where required'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector',
+          description: 'Test smoke detector functionality, battery, and verify age - Professional inspection required',
+          frequency: 'monthly',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify manufacture date on unit (replace if 10+ years old)',
+            'Clean detector housing and vents',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Carbon Monoxide Detector',
+          description: 'Test carbon monoxide detector — required where gas appliances or attached garage present',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify CO detector is within 5 years of manufacture date',
+            'Confirm placement near sleeping areas and gas appliances',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
           category: 'structural',
           itemName: 'Foundation Walls',
-          description: 'Inspect foundation walls for cracks and moisture',
-          frequency: 'biannual',
+          description: 'Inspect basement foundation walls for cracks, movement, or water ingress',
+          frequency: 'annual',
           priority: 'critical',
           checklistPoints: [
-            'Check for new or expanding cracks',
-            'Look for water infiltration signs',
-            'Inspect for efflorescence (white deposits)',
-            'Check wall plumbness and alignment',
-            'Test moisture levels'
+            'Check for horizontal or stair-step cracks',
+            'Look for wall bowing or inward movement',
+            'Inspect mortar joints for deterioration',
+            'Check for efflorescence (white mineral deposits)',
+            'Look for water staining or active seepage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Moisture & Damp Signs',
+          description: 'Check for moisture infiltration, condensation, and damp staining',
+          frequency: 'quarterly',
+          priority: 'high',
+          checklistPoints: [
+            'Check for water staining on walls and floor',
+            'Look for mould or mildew growth',
+            'Inspect window wells for water pooling',
+            'Check for efflorescence on concrete',
+            'Test dehumidifier operation if present'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Drainage & Waterproofing',
+          description: 'Inspect drainage systems and waterproofing membranes',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check floor drain is clear and functioning',
+            'Inspect sump pit for debris',
+            'Test sump pump operation',
+            'Check window well drains are clear',
+            'Inspect waterproofing membrane for breaches'
+          ]
+        },
+        {
+          category: 'pest_control',
+          itemName: 'Pest Infestation Signs',
+          description: 'Check for evidence of pest or rodent activity',
+          frequency: 'quarterly',
+          priority: 'high',
+          checklistPoints: [
+            'Look for rodent droppings or gnaw marks',
+            'Check for insect activity or nesting',
+            'Inspect entry points around pipes and gaps',
+            'Look for termite mud tubes on walls',
+            'Check stored items for pest damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect basement walls and ceiling for cracks, damage, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect paint condition',
+            'Check for sagging ceiling areas',
+            'Note any impact damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect basement floor for cracks, heaving, or moisture damage',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check concrete slab for cracks or heaving',
+            'Look for moisture or damp patches',
+            'Inspect floor covering condition',
+            'Check for uneven surfaces',
+            'Look for trip hazards'
           ]
         },
         {
           category: 'mechanical',
           itemName: 'Sump Pump',
-          description: 'Test sump pump operation and backup systems',
-          frequency: 'quarterly',
-          priority: 'critical',
+          description: 'Test sump pump operation and check condition',
+          frequency: 'biannual',
+          priority: 'high',
           checklistPoints: [
-            'Test pump operation with water',
-            'Check float switch operation',
-            'Inspect discharge pipe',
-            'Test backup power system',
-            'Check pit condition and cleanliness'
+            'Pour water into sump pit to trigger float switch',
+            'Verify pump activates and discharges correctly',
+            'Check discharge pipe is clear and directed away from foundation',
+            'Inspect pump for corrosion or damage',
+            'Test backup power or battery backup if present'
           ]
         }
       ]
@@ -3812,7 +4596,8 @@ export class DatabaseStorage implements IStorage {
     }
 
     // PRIORITY 3: Handle bedroom types with proper inspection items
-    if (template === 'master_bedroom' || template.includes('bedroom') || template === 'guest_bedroom' || template === 'kids_bedroom') {
+    // Kids Bedroom - child-specific safety items (split from generic bedroom template)
+    if (template === 'kids_bedroom') {
       return [
         {
           category: 'electrical',
@@ -3843,9 +4628,197 @@ export class DatabaseStorage implements IStorage {
         {
           category: 'safety',
           itemName: 'Smoke Detector',
-          description: 'Test smoke detector functionality, battery, and verify age',
+          description: 'Test smoke detector functionality, battery, and verify age - Professional inspection required',
           frequency: 'monthly',
           priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify manufacture date on unit (replace if 10+ years old)',
+            'Clean detector housing and vents',
+            'Take photo showing manufacture date stamp'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector Replacement',
+          description: 'Replace smoke detector battery and check unit condition',
+          frequency: 'annual',
+          priority: 'high',
+          checklistPoints: [
+            'Replace battery with new alkaline battery',
+            'Test alarm after battery replacement',
+            'Check manufacture date — replace unit if 10+ years old',
+            'Clean detector grille with soft brush',
+            'Record replacement date'
+          ]
+        },
+        {
+          category: 'windows_doors',
+          itemName: 'Windows',
+          description: 'Inspect window condition, operation, locks, and seals',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test window opens and closes smoothly',
+            'Check window locks are secure',
+            'Inspect seals and weatherstripping',
+            'Look for cracks or damage to glass',
+            'Check for condensation between panes'
+          ]
+        },
+        {
+          category: 'furnishings',
+          itemName: 'Window Furnishings',
+          description: 'Check condition of curtains, blinds, and window treatments',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test blind or curtain operation',
+            'Check cord condition and safety — must be child-safe cordless or with cord tensioner',
+            'Inspect mounting brackets',
+            'Look for damage or staining',
+            'Verify child cord safety compliance'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Window Restrictors',
+          description: 'Check window restrictor devices for child safety compliance (AS 1926.2)',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Verify restrictors are fitted to all openable windows',
+            'Test restrictor limits opening to 125mm or less',
+            'Check restrictor mechanism is secure and functional',
+            'Inspect for damage or tampering',
+            'Confirm adult release mechanism works correctly'
+          ]
+        },
+        {
+          category: 'hvac',
+          itemName: 'Air Conditioning',
+          description: 'Test air conditioning system operation and filters',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test cooling and heating modes',
+            'Check filters and clean if needed',
+            'Verify thermostat operation',
+            'Check for unusual noises',
+            'Inspect vents for blockages'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect walls and ceiling for cracks, damage, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect paint condition',
+            'Check for sagging ceiling areas',
+            'Note any impact damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect flooring for damage, wear, or trip hazards',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for scratches, stains, or damage',
+            'Identify any trip hazards',
+            'Check carpet condition and fixings',
+            'Inspect skirting boards for damage'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Door Safety & Pinch Points',
+          description: 'Check door condition for child pinch-point hazards and safe operation',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Check door hinges are secure and not exposed',
+            'Test door closes without slamming (pinch risk)',
+            'Inspect door handle height and child accessibility',
+            'Check door stops are in place to protect walls and fingers',
+            'Verify door lock is functional and safe'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Power Outlet Safety Covers',
+          description: 'Check power outlet safety covers are fitted and functioning',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Verify safety covers are fitted to all unused outlets',
+            'Test covers are difficult for children to remove',
+            'Check covers are in good condition (not cracked)',
+            'Inspect that covers fit flush with outlet face',
+            'Replace any missing or damaged covers'
+          ]
+        },
+        {
+          category: 'fixtures',
+          itemName: 'Wardrobe Condition',
+          description: 'Check wardrobe doors, tracks, shelving, and child safety',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test wardrobe doors open and close smoothly',
+            'Check sliding door tracks are clean and functional',
+            'Inspect shelving for stability — heavy items must not be at child reach',
+            'Check hanging rails are secure',
+            'Look for moisture or mould inside wardrobe',
+            'Verify wardrobe cannot tip if climbed'
+          ]
+        }
+      ];
+    }
+
+    if (template === 'master_bedroom' || template.includes('bedroom') || template === 'guest_bedroom') {
+      return [
+        {
+          category: 'electrical',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all light switches for proper operation',
+            'Check for flickering or dimming',
+            'Inspect switch plates for damage',
+            'Verify correct wiring'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all power outlets with tester',
+            'Check for loose outlets',
+            'Inspect for damage or scorch marks',
+            'Verify GFCI protection where required'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector',
+          description: 'Test smoke detector functionality, battery, and verify age — Professional inspection required',
+          frequency: 'monthly',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
           checklistPoints: [
             'Press test button to verify alarm sounds',
             'Check battery level indicator',
@@ -3925,6 +4898,20 @@ export class DatabaseStorage implements IStorage {
           ]
         },
         {
+          category: 'fixtures',
+          itemName: 'Wardrobe Condition',
+          description: 'Inspect overall wardrobe unit stability, fit, and condition',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Check wardrobe is plumb and securely fixed to wall',
+            'Inspect carcass for bowing or structural deformation',
+            'Check for moisture damage or swelling on panels',
+            'Verify internal lighting works if fitted',
+            'Look for mould or pest evidence inside'
+          ]
+        },
+        {
           category: 'electrical',
           itemName: 'Data Point',
           description: 'Inspect data/network point condition and connectivity',
@@ -3936,11 +4923,68 @@ export class DatabaseStorage implements IStorage {
             'Inspect for exposed wiring',
             'Check labelling is correct'
           ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect walls and ceiling for cracks, damage, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect paint condition',
+            'Check for sagging ceiling areas',
+            'Note any impact damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect flooring for damage, wear, or trip hazards',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for scratches, stains, or damage',
+            'Identify any trip hazards',
+            'Check carpet condition and fixings',
+            'Inspect skirting boards for damage'
+          ]
+        },
+        {
+          category: 'windows_doors',
+          itemName: 'Door & Lock Condition',
+          description: 'Check bedroom door operation, alignment, and lock function',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test door opens and closes smoothly without binding',
+            'Check door handle and lock operate correctly',
+            'Inspect door frame and architrave for damage',
+            'Verify door stops are in place',
+            'Check for gaps or draughts around door'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Ceiling Fan',
+          description: 'Test ceiling fan operation, balance, and blade condition',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test all fan speed settings',
+            'Check for wobble or vibration during operation',
+            'Inspect blade condition for cracks or damage',
+            'Check mounting is secure to ceiling',
+            'Test integrated light if fitted',
+            'Clean blade surfaces'
+          ]
         }
       ];
     }
 
-    if (template.includes('bathroom') || template === 'master_ensuite' || template === 'powder_room') {
+    if (template.includes('bathroom') || template === 'master_ensuite') {
       return [
         {
           category: 'electrical',
@@ -4078,6 +5122,20 @@ export class DatabaseStorage implements IStorage {
             'Inspect for moisture damage or swelling',
             'Verify mirror mounting is secure',
             'Check shelf condition and brackets'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Window Restrictors',
+          description: 'Check window restrictor devices for child safety compliance (AS 1926.2)',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Verify restrictors are fitted to all openable windows',
+            'Test restrictor limits opening to 125mm or less',
+            'Check restrictor mechanism is secure and functional',
+            'Inspect for damage or tampering',
+            'Confirm adult release mechanism works correctly'
           ]
         }
       ];
@@ -4470,8 +5528,166 @@ export class DatabaseStorage implements IStorage {
       ];
     }
 
+    // Powder Room - toilet + vanity only (no bath or shower)
+    if (template === 'powder_room') {
+      return [
+        {
+          category: 'electrical',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all light switches for proper operation',
+            'Check for flickering or dimming',
+            'Inspect switch plates for damage',
+            'Verify correct wiring'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test all power outlets with tester',
+            'Check for loose outlets',
+            'Inspect for damage or scorch marks',
+            'Verify GFCI protection where required'
+          ]
+        },
+        {
+          category: 'plumbing',
+          itemName: 'Vanity Tap & Flexi Hoses',
+          description: 'Inspect vanity tap operation and flexi hose condition',
+          frequency: 'quarterly',
+          priority: 'high',
+          checklistPoints: [
+            'Test hot and cold water flow',
+            'Check for drips or leaks',
+            'Inspect flexi hose for bulging or damage',
+            'Check connections under vanity',
+            'Verify isolation valve operation'
+          ]
+        },
+        {
+          category: 'plumbing',
+          itemName: 'Toilet & Flexi Hose',
+          description: 'Inspect toilet operation and water supply connection',
+          frequency: 'quarterly',
+          priority: 'high',
+          checklistPoints: [
+            'Test flush mechanism',
+            'Check for leaks at base',
+            'Inspect flexi hose condition',
+            'Check cistern for running water',
+            'Verify seat and lid security'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Exhaust Fan',
+          description: 'Test powder room exhaust fan operation',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test fan operation',
+            'Check for unusual noises',
+            'Clean fan grille',
+            'Verify adequate airflow',
+            'Check timer/switch operation'
+          ]
+        },
+        {
+          category: 'general',
+          itemName: 'Cabinetry & Storage',
+          description: 'Inspect vanity cabinets and powder room storage',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test all door and drawer operation',
+            'Check hinges and handles for security',
+            'Inspect for moisture damage or swelling',
+            'Verify mirror mounting is secure'
+          ]
+        }
+      ];
+    }
+
+    // Pantry - dry storage room, no plumbing
+    if (template === 'pantry') {
+      return [
+        {
+          category: 'electrical',
+          itemName: 'Light Switch',
+          description: 'Check operation and condition of light switches',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test light switch for proper operation',
+            'Inspect switch plate for damage',
+            'Verify correct wiring'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Power Points (GPO)',
+          description: 'Test and inspect general power outlets',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test outlets with tester',
+            'Check for loose outlets or damage',
+            'Inspect for scorch marks'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector',
+          description: 'Test smoke detector functionality, battery, and verify age',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional' as const,
+          checklistPoints: [
+            'Press test button to verify alarm sounds',
+            'Check battery level indicator',
+            'Verify manufacture date (replace if 10+ years old)',
+            'Clean detector housing and vents'
+          ]
+        },
+        {
+          category: 'general',
+          itemName: 'Shelving & Storage',
+          description: 'Inspect pantry shelving for stability, damage, and safe loading',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test shelf brackets are secure',
+            'Check for sagging or cracked shelves',
+            'Inspect shelf brackets and wall fixings',
+            'Verify shelves can handle load safely'
+          ]
+        },
+        {
+          category: 'pest_control',
+          itemName: 'Pest & Rodent Signs',
+          description: 'Check pantry for evidence of pest or rodent activity',
+          frequency: 'quarterly',
+          priority: 'high',
+          checklistPoints: [
+            'Look for rodent droppings or gnaw marks',
+            'Check for insect activity or nesting',
+            'Inspect entry points around pipes and gaps',
+            'Check door seals for gaps',
+            'Look for contaminated food packaging'
+          ]
+        }
+      ];
+    }
+
     // Living areas (living_room, family_room, lounge, dining_room)
-    if (template === 'living_room' || template === 'family_room' || template === 'lounge' || template === 'dining_room') {
+    if (template === 'living_room' || template === 'family_room' || template === 'lounge' || template === 'dining_room' || template === 'living') {
       return [
         {
           category: 'electrical',
@@ -4561,7 +5777,7 @@ export class DatabaseStorage implements IStorage {
           description: 'Gas heater/fireplace inspection by licensed gas fitter - certificate required',
           frequency: 'annual',
           priority: 'critical',
-          inspectionType: 'professional',
+          inspectionType: 'professional' as const,
           photoRequired: true,
           checklistPoints: [
             'Full inspection of gas connections by licensed gas fitter',
@@ -4570,12 +5786,68 @@ export class DatabaseStorage implements IStorage {
             'Leak test with approved equipment',
             'Issue Gas Safety Certificate'
           ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect walls and ceiling for cracks, staining, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould patches',
+            'Inspect paint condition and adhesion',
+            'Check for sagging ceiling areas',
+            'Note any impact or scuff damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect flooring for damage, wear, or trip hazards',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for scratches, stains, or damage',
+            'Identify any trip hazards',
+            'Check carpet condition and fixings',
+            'Inspect skirting boards for damage'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector Replacement',
+          description: 'Replace smoke detector battery and check unit condition',
+          frequency: 'annual',
+          priority: 'high',
+          checklistPoints: [
+            'Replace battery with new alkaline battery',
+            'Test alarm after battery replacement',
+            'Check manufacture date — replace unit if 10+ years old',
+            'Clean detector grille with soft brush',
+            'Record replacement date'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Window Safety Restrictors',
+          description: 'Check window restrictor devices for child safety compliance (AS 1926.2)',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Verify restrictors are fitted to all openable windows',
+            'Test restrictor limits opening to 125mm or less',
+            'Check restrictor mechanism is secure and functional',
+            'Inspect for damage or tampering',
+            'Confirm adult release mechanism works correctly'
+          ]
         }
       ];
     }
 
     // Theater Room / Media Room
-    if (template === 'theater_room' || template === 'media_room') {
+    if (template === 'theater_room' || template === 'game_room' || template === 'music_room') {
       return [
         {
           category: 'electrical',
@@ -4657,12 +5929,54 @@ export class DatabaseStorage implements IStorage {
             'Inspect mounting brackets',
             'Look for damage or staining'
           ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect walls and ceiling for cracks, damage, or deterioration',
+          frequency: 'annual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect paint and acoustic finish condition',
+            'Check for sagging ceiling areas or loose panels',
+            'Note any impact damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect flooring for damage, wear, or trip hazards',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for scratches, stains, or damage',
+            'Identify any trip hazards from cable management',
+            'Check carpet condition and fixings',
+            'Inspect skirting boards for damage'
+          ]
+        },
+        {
+          category: 'hvac',
+          itemName: 'Ventilation',
+          description: 'Check ventilation adequacy for the occupancy load of the room',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test exhaust fan or mechanical ventilation is operational',
+            'Check air conditioning filters are clean',
+            'Verify adequate fresh air flow for expected occupancy',
+            'Check for condensation buildup on walls or ceiling',
+            'Inspect vent covers for blockages or damage'
+          ]
         }
       ];
     }
 
     // Study/Home Office/Library
-    if (template === 'study' || template === 'home_office' || template === 'office' || template === 'library') {
+    if (template === 'home_office' || template === 'office' || template === 'library') {
       return [
         {
           category: 'electrical',
@@ -4745,95 +6059,47 @@ export class DatabaseStorage implements IStorage {
             'Check shelf supports are secure',
             'Verify soft-close mechanisms if present'
           ]
-        }
-      ];
-    }
-
-    // Garage
-    if (template === 'garage') {
-      return [
-        {
-          category: 'electrical',
-          itemName: 'Light Switch',
-          description: 'Check operation and condition of light switches',
-          frequency: 'biannual',
-          priority: 'medium',
-          checklistPoints: [
-            'Test all light switches for proper operation',
-            'Check for flickering or dimming',
-            'Inspect switch plates for damage',
-            'Verify correct wiring'
-          ]
         },
         {
-          category: 'electrical',
-          itemName: 'Power Points (GPO)',
-          description: 'Test and inspect general power outlets',
-          frequency: 'biannual',
-          priority: 'medium',
-          checklistPoints: [
-            'Test all power outlets with tester',
-            'Check for loose outlets',
-            'Inspect for damage or scorch marks',
-            'Verify GFCI protection where required'
-          ]
-        },
-        {
-          category: 'safety',
-          itemName: 'Smoke Detector',
-          description: 'Test smoke detector functionality, battery, and verify age',
-          frequency: 'monthly',
-          priority: 'critical',
-          checklistPoints: [
-            'Press test button to verify alarm sounds',
-            'Check battery level indicator',
-            'Verify manufacture date on unit (replace if 10+ years old)',
-            'Clean detector housing and vents',
-            'Take photo showing manufacture date stamp'
-          ]
-        },
-        {
-          category: 'electrical',
-          itemName: 'Garage Door Opener',
-          description: 'Test garage door opener operation and safety features',
-          frequency: 'quarterly',
-          priority: 'high',
-          checklistPoints: [
-            'Test door opens and closes smoothly',
-            'Check auto-reverse safety feature',
-            'Inspect door tracks and rollers',
-            'Test remote control operation',
-            'Check door seal condition'
-          ]
-        },
-        {
-          category: 'plumbing',
-          itemName: 'Hot Water System',
-          description: 'Inspect hot water system for condition and safety',
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect walls and ceiling for cracks, damage, or deterioration',
           frequency: 'annual',
-          priority: 'high',
+          priority: 'medium',
           checklistPoints: [
-            'Check for visible leaks',
-            'Test relief valve operation',
-            'Check temperature setting',
-            'Inspect anode rod condition',
-            'Verify adequate clearance'
+            'Check for new cracks or settlement marks',
+            'Look for water stains or mould',
+            'Inspect paint condition',
+            'Check for sagging ceiling areas',
+            'Note any impact damage'
           ]
         },
         {
-          category: 'gas',
-          itemName: 'Gas Appliance Inspection',
-          description: 'Gas appliance/hot water inspection by licensed gas fitter - certificate required',
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect flooring for damage, wear, or trip hazards',
           frequency: 'biannual',
-          priority: 'critical',
-          inspectionType: 'professional',
-          photoRequired: true,
+          priority: 'medium',
           checklistPoints: [
-            'Full inspection of gas connections by licensed gas fitter',
-            'Inspect gas hot water system connections',
-            'Check gas bottle connections and regulator',
-            'Leak test with approved equipment',
-            'Issue Gas Safety Certificate'
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for scratches, stains, or damage from furniture',
+            'Identify any trip hazards from cables or equipment',
+            'Check carpet condition and fixings',
+            'Inspect skirting boards for damage'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Air Conditioning/Ventilation',
+          description: 'Test air conditioning system and verify adequate ventilation for the workspace',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Test cooling and heating modes',
+            'Check filters and clean if needed',
+            'Verify thermostat operation',
+            'Confirm adequate fresh air for occupancy',
+            'Check for unusual noises or odours'
           ]
         }
       ];
@@ -4895,9 +6161,80 @@ export class DatabaseStorage implements IStorage {
             'Verify mounting is secure',
             'Check for sharp edges'
           ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Floor Condition',
+          description: 'Inspect hallway flooring for damage, wear, or trip hazards',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for loose tiles, boards, or carpet edges',
+            'Look for wear patterns or damage in high-traffic areas',
+            'Identify any trip hazards or uneven surfaces',
+            'Inspect transition strips between floor types',
+            'Check skirting boards for damage'
+          ]
+        },
+        {
+          category: 'structural',
+          itemName: 'Walls & Ceiling Condition',
+          description: 'Inspect hallway walls and ceiling for damage or deterioration',
+          frequency: 'biannual',
+          priority: 'medium',
+          checklistPoints: [
+            'Check for cracks or settlement marks',
+            'Look for scuff marks or impact damage from furniture moving',
+            'Inspect paint condition and adhesion',
+            'Check for water stains or mould',
+            'Look for sagging ceiling areas'
+          ]
+        },
+        {
+          category: 'electrical',
+          itemName: 'Emergency & Exit Lighting',
+          description: 'Test emergency lighting and exit signs for compliance',
+          frequency: 'biannual',
+          priority: 'high',
+          checklistPoints: [
+            'Test emergency light activates on power loss',
+            'Check battery backup holds charge',
+            'Verify exit signs are illuminated and legible',
+            'Inspect light covers for damage or obscuration',
+            'Record test date and result'
+          ]
+        },
+        {
+          category: 'safety',
+          itemName: 'Smoke Detector Replacement',
+          description: 'Replace smoke detector battery and check unit condition',
+          frequency: 'annual',
+          priority: 'high',
+          checklistPoints: [
+            'Replace battery with new alkaline battery',
+            'Test alarm after battery replacement',
+            'Check manufacture date — replace unit if 10+ years old',
+            'Clean detector grille with soft brush',
+            'Record replacement date'
+          ]
+        },
+        {
+          category: 'windows_doors',
+          itemName: 'Windows',
+          description: 'Inspect any hallway windows for condition, operation, and seals',
+          frequency: 'biannual',
+          priority: 'low',
+          checklistPoints: [
+            'Test window opens and closes smoothly if present',
+            'Check window locks are secure',
+            'Inspect seals and weatherstripping',
+            'Look for cracks or damage to glass',
+            'Check for condensation between panes'
+          ]
         }
       ];
     }
+
 
     // Power Box / Electrical Panel - Professional inspections only
     if (template === 'power_box') {
