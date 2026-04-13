@@ -10,6 +10,9 @@ export interface ComplianceStandard {
   complianceYears: number;
   applicableRooms?: string[]; // If undefined, applies to property-level or all rooms
   conditional?: string; // Special conditions for when this applies
+  applicableStates?: string[]; // undefined = all states/provinces of that country; ['QLD','VIC'] = specific states only
+  complianceMode?: 'condition_based' | 'fixed'; // fixed = statutory interval, never shortened by condition rating
+  rentalOnly?: boolean; // true = only applies to rental/investment properties (not owner-occupied)
 }
 
 export interface CountryCompliance {
@@ -179,6 +182,145 @@ export const GLOBAL_COMPLIANCE_STANDARDS: CountryCompliance[] = [
         complianceStandard: 'AS 1851 (Annual)',
         complianceYears: 1,
         applicableRooms: ['kitchen', 'hallway', 'garage']
+      },
+
+      // ── VIC-specific mandatory rental compliance ──────────────────────────
+      {
+        itemName: 'Gas Safety Check (Rental Compliance)',
+        category: 'gas',
+        frequency: 'biannual',
+        priority: 'critical',
+        description: 'Mandatory gas safety check every 2 years for VIC rental properties by licensed gasfitter — Gas Safety Certificate required',
+        checklistPoints: [
+          'Inspect all gas appliances for correct operation and condition',
+          'Test for gas leaks at all connections with approved equipment',
+          'Check flues, ventilation, and combustion air supply',
+          'Verify all gas installations meet AS/NZS 5601',
+          'Issue Gas Safety Certificate and provide copy to tenant within 14 days',
+          'Keep certificate for minimum 5 years'
+        ],
+        photoRequired: true,
+        complianceStandard: 'Residential Tenancies Act 1997 (VIC) — 2 years',
+        complianceYears: 2,
+        applicableRooms: ['kitchen', 'laundry', 'living_room'],
+        applicableStates: ['VIC'],
+        complianceMode: 'fixed',
+        rentalOnly: true
+      },
+      {
+        itemName: 'Electrical Safety Check (Rental Compliance)',
+        category: 'electrical',
+        frequency: 'biannual',
+        priority: 'critical',
+        description: 'Mandatory electrical safety check every 2 years for VIC rental properties by licensed electrician — Electrical Safety Certificate required',
+        checklistPoints: [
+          'Test all power points, switches, and light fittings',
+          'Inspect wiring, switchboard, and earthing',
+          'Test all RCDs — record trip time (must be < 300ms)',
+          'Check for double adapters, extension cord risks, or overloaded circuits',
+          'Issue Electrical Safety Certificate and provide copy to tenant within 14 days',
+          'Keep certificate for minimum 5 years'
+        ],
+        photoRequired: true,
+        complianceStandard: 'Residential Tenancies Act 1997 (VIC) — 2 years',
+        complianceYears: 2,
+        applicableRooms: ['power_box'],
+        applicableStates: ['VIC'],
+        complianceMode: 'fixed',
+        rentalOnly: true
+      },
+
+      // ── QLD-specific mandatory compliance ────────────────────────────────
+      {
+        itemName: 'Pool Safety Certificate',
+        category: 'safety',
+        frequency: 'annual',
+        priority: 'critical',
+        description: 'Pool safety certificate required every 2 years in QLD — must be obtained from a licensed pool safety inspector before selling or leasing',
+        checklistPoints: [
+          'Engage licensed QLD pool safety inspector',
+          'Verify pool fence height (minimum 1.2m) and structure',
+          'Test self-closing and self-latching gate (latch on pool side)',
+          'Check for climbable objects within 900mm of fence',
+          'Inspect all fence gaps — none to exceed 100mm',
+          'Confirm CPR signage is current, weatherproof, and visible',
+          'Obtain Pool Safety Certificate and lodge with QBCC'
+        ],
+        photoRequired: true,
+        complianceStandard: 'Building Act 1975 (QLD) — Pool Safety Standard',
+        complianceYears: 2,
+        applicableRooms: ['pool', 'outdoor'],
+        applicableStates: ['QLD'],
+        complianceMode: 'fixed'
+      },
+      {
+        itemName: 'Electrical Safety Certificate (QLD Rental)',
+        category: 'electrical',
+        frequency: 'annual',
+        priority: 'critical',
+        description: 'Electrical safety certificate required every 5 years for QLD rental properties by a licensed electrical contractor',
+        checklistPoints: [
+          'Engage licensed electrical contractor (QBCC licensed)',
+          'Test all power points and light switches',
+          'Inspect switchboard, earthing, and wiring condition',
+          'Test all RCDs/safety switches',
+          'Issue Electrical Safety Certificate and provide to tenant',
+          'Keep certificate for property records'
+        ],
+        photoRequired: true,
+        complianceStandard: 'Electrical Safety Act 2002 (QLD) — 5 years',
+        complianceYears: 5,
+        applicableRooms: ['power_box'],
+        applicableStates: ['QLD'],
+        complianceMode: 'fixed',
+        rentalOnly: true
+      },
+      {
+        itemName: 'Interconnected Photoelectric Smoke Alarm (QLD)',
+        category: 'safety',
+        frequency: 'annual',
+        priority: 'critical',
+        description: 'QLD rental properties must have interconnected photoelectric smoke alarms in all bedrooms, hallways, and storeys by 1 January 2027. New builds and substantial renovations already required.',
+        checklistPoints: [
+          'Confirm alarms are photoelectric type (not ionisation)',
+          'Confirm all alarms in the property are interconnected (all activate together)',
+          'Verify alarm in every bedroom and hallway between sleeping areas',
+          'Verify alarm on each storey if multi-level',
+          'Test interconnected activation — triggering one must trigger all',
+          'Check alarms are hardwired or have 10-year sealed lithium battery',
+          'Take photo showing interconnection and alarm type label'
+        ],
+        photoRequired: true,
+        complianceStandard: 'Fire and Emergency Services Act 1990 (QLD) — Deadline 1 Jan 2027',
+        complianceYears: 1,
+        applicableRooms: ['bedroom', 'hallway', 'living_room'],
+        applicableStates: ['QLD'],
+        complianceMode: 'fixed',
+        rentalOnly: true
+      },
+
+      // ── NSW-specific landlord obligation ──────────────────────────────────
+      {
+        itemName: 'Smoke Alarm Landlord Check (NSW)',
+        category: 'safety',
+        frequency: 'annual',
+        priority: 'critical',
+        description: 'NSW landlords must ensure smoke alarms are operational at the start of each tenancy and within 30 days of being notified of a fault by the tenant',
+        checklistPoints: [
+          'Test all smoke alarms before new tenancy starts',
+          'Replace any non-functional alarm before tenant move-in',
+          'Replace batteries in battery-powered alarms',
+          'Check alarms are correctly located (bedroom, hallway, each storey)',
+          'Document check with photos for property records',
+          'Ensure alarm age is within 10 years (AS 3786)'
+        ],
+        photoRequired: true,
+        complianceStandard: 'Residential Tenancies Act 2010 (NSW) — Annual / each tenancy',
+        complianceYears: 1,
+        applicableRooms: ['bedroom', 'hallway', 'living_room'],
+        applicableStates: ['NSW'],
+        complianceMode: 'fixed',
+        rentalOnly: true
       }
     ]
   },

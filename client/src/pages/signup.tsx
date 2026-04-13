@@ -174,6 +174,11 @@ export default function Signup() {
                       {COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
                     </select>
                   </FormControl>
+                  {field.value === 'AU' && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Australian properties get state-specific compliance items — VIC gas &amp; electrical safety checks, QLD pool safety certificates, QLD &amp; NSW smoke alarm obligations, and more. Enable per property when adding.
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )} />

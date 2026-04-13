@@ -46,6 +46,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { insertPropertySchema, type Property, type InsertProperty } from '@shared/schema';
@@ -271,6 +272,8 @@ export default function Properties() {
       name: '',
       address: '',
       country: 'AU', // Default to Australia
+      stateProvince: '',
+      isRentalProperty: false,
       propertyType: 'apartment',
       unitNumber: '',
       bedrooms: 0,
@@ -302,6 +305,8 @@ export default function Properties() {
       name: '',
       address: '',
       country: 'AU',
+      stateProvince: '',
+      isRentalProperty: false,
       propertyType: 'apartment',
       unitNumber: '',
       bedrooms: 0,
@@ -358,6 +363,8 @@ export default function Properties() {
       ...data,
       address: assembled || data.address,
       agencyId: user?.agencyId || 0,
+      // Derive stateProvince from the address state/region sub-field
+      stateProvince: addAddressParts.stateRegion || data.stateProvince || null,
     };
     addPropertyMutation.mutate(submissionData);
   };
@@ -371,6 +378,7 @@ export default function Properties() {
         ...data,
         address: assembled || data.address,
         agencyId: user?.agencyId || 0,
+        stateProvince: editAddressParts.stateRegion || data.stateProvince || null,
         lastInspectionDate: data.lastInspectionDate ? new Date(data.lastInspectionDate) : null,
         nextInspectionDate: data.nextInspectionDate ? new Date(data.nextInspectionDate) : null,
       },
@@ -385,6 +393,8 @@ export default function Properties() {
       name: property.name,
       address: property.address,
       country: property.country || 'AU',
+      stateProvince: property.stateProvince || '',
+      isRentalProperty: property.isRentalProperty ?? false,
       propertyType: property.propertyType as 'apartment' | 'house' | 'commercial',
       unitNumber: property.unitNumber || '',
       bedrooms: property.bedrooms || 0,
@@ -632,6 +642,30 @@ export default function Properties() {
                         <p className="text-xs text-muted-foreground mt-1">
                           Changing country updates the state/postcode fields and compliance standards.
                         </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="isRentalProperty"
+                    render={({ field }) => (
+                      <FormItem>
+                        <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                          <div>
+                            <FormLabel className="text-sm font-medium">Rental / Investment Property</FormLabel>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Enables state-specific mandatory compliance items (e.g. VIC gas/electrical safety checks, QLD smoke alarms, NSW smoke alarm obligations).
+                            </p>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value ?? false}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1462,6 +1496,30 @@ export default function Properties() {
                     <p className="text-xs text-muted-foreground mt-1">
                       Changing country updates the state/postcode fields and compliance standards.
                     </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={editForm.control}
+                name="isRentalProperty"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                      <div>
+                        <FormLabel className="text-sm font-medium">Rental / Investment Property</FormLabel>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Enables state-specific mandatory compliance items (e.g. VIC gas/electrical safety checks, QLD smoke alarms, NSW smoke alarm obligations).
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value ?? false}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}

@@ -1026,17 +1026,23 @@ export class DatabaseStorage implements IStorage {
       // and Step 3 (compliance age escalation)
       const [currentItem] = await this.database
         .select({
-          frequency:            inspectionItems.frequency,
+          frequency:                inspectionItems.frequency,
           inspectionIntervalMonths: inspectionItems.inspectionIntervalMonths,
-          complianceYears:      inspectionItems.complianceYears,
-          lastReplacementDate:  inspectionItems.lastReplacementDate,
-          nextReplacementDue:   inspectionItems.nextReplacementDue,
+          complianceYears:          inspectionItems.complianceYears,
+          lastReplacementDate:      inspectionItems.lastReplacementDate,
+          nextReplacementDue:       inspectionItems.nextReplacementDue,
+          complianceMode:           inspectionItems.complianceMode, // 'fixed' = skip condition multiplier
         })
         .from(inspectionItems)
         .where(eq(inspectionItems.id, id));
 
       if (currentItem) {
         // ── STEP 2: Condition multiplier ─────────────────────────────────────
+        // Skip for 'fixed' compliance mode items (mandatory statutory intervals
+        // that must never be shortened or extended by condition rating, e.g. VIC
+        // gas/electrical safety checks, QLD pool safety certs, etc.)
+        const isFixed = currentItem.complianceMode === 'fixed';
+
         const baseIntervalDays =
           currentItem.frequency === 'monthly'     ? 30  :
           currentItem.frequency === 'quarterly'   ? 90  :
@@ -1045,14 +1051,20 @@ export class DatabaseStorage implements IStorage {
           currentItem.frequency === 'annual'      ? 365 :
           (currentItem.inspectionIntervalMonths || 12) * 30;
 
-        const multiplier =
-          updates.condition === 'good'    ? 1.0  :
-          updates.condition === 'average' ? 0.5  :
-          updates.condition === 'poor'    ? 0.25 : 1.0;
-
-        const adjustedDays = Math.round(baseIntervalDays * multiplier);
-        const conditionDate = new Date();
-        conditionDate.setDate(conditionDate.getDate() + adjustedDays);
+        let conditionDate: Date;
+        if (isFixed) {
+          // Fixed compliance items: always use the base interval regardless of condition
+          conditionDate = new Date();
+          conditionDate.setDate(conditionDate.getDate() + baseIntervalDays);
+        } else {
+          const multiplier =
+            updates.condition === 'good'    ? 1.0  :
+            updates.condition === 'average' ? 0.5  :
+            updates.condition === 'poor'    ? 0.25 : 1.0;
+          const adjustedDays = Math.round(baseIntervalDays * multiplier);
+          conditionDate = new Date();
+          conditionDate.setDate(conditionDate.getDate() + adjustedDays);
+        }
         updates = { ...updates, nextInspectionDate: conditionDate };
 
         // ── STEP 3: Compliance age escalation ────────────────────────────────
@@ -2498,17 +2510,44 @@ export class DatabaseStorage implements IStorage {
     return allowedItems.includes(itemName);
   }
 
-  async createBulkInspectionItems(roomId: number, template: string, floor?: number): Promise<InspectionItem[]> {
-    let templates = this.getInspectionItemTemplates(template);
-    
+  async createBulkInspectionItems(
+    roomId: number,
+    template: string,
+    floor?: number,
+    propertyContext?: {
+      stateProvince?: string | null;
+      isRentalProperty?: boolean | null;
+      country?: string | null;
+    }
+  ): Promise<InspectionItem[]> {
+    // Get raw templates (may include state-specific items with applicableStates + rentalOnly)
+    let templates: (Omit<InsertInspectionItem, 'roomId'> & { rentalOnly?: boolean })[] =
+      this.getInspectionItemTemplates(template);
+
     // Floor-aware filtering: skip Window Restrictors on ground floor (floor 0) or basement (-1)
     if (floor !== undefined && floor <= 0) {
-      templates = templates.filter(t => 
+      templates = templates.filter(t =>
         !t.itemName?.toLowerCase().includes('window restrictor') &&
         !t.itemName?.toLowerCase().includes('window safety')
       );
     }
-    
+
+    // ── State + rental filtering ─────────────────────────────────────────────
+    // Items with applicableStates only appear if the property's state matches.
+    // Items with rentalOnly:true only appear for rental/investment properties.
+    if (propertyContext) {
+      templates = templates.filter(t => {
+        // State filter: if item declares specific states, property must be in one of them
+        if (t.applicableStates && t.applicableStates.length > 0) {
+          if (!propertyContext.stateProvince) return false;
+          if (!t.applicableStates.includes(propertyContext.stateProvince)) return false;
+        }
+        // Rental filter: if item is rental-only, property must be a rental
+        if ((t as any).rentalOnly && !propertyContext.isRentalProperty) return false;
+        return true;
+      });
+    }
+
     // Calculate nextInspectionDate based on frequency — always use item's own frequency, no arbitrary fallback
     const calculateNextDate = (frequency?: string): Date => {
       const now = new Date();
@@ -2516,13 +2555,14 @@ export class DatabaseStorage implements IStorage {
         case 'monthly':     return new Date(now.setMonth(now.getMonth() + 1));
         case 'quarterly':   return new Date(now.setMonth(now.getMonth() + 3));
         case 'biannual':    return new Date(now.setMonth(now.getMonth() + 6));
-        case 'semi-annual': return new Date(now.setMonth(now.getMonth() + 6)); // alias
+        case 'semi-annual': return new Date(now.setMonth(now.getMonth() + 6));
         case 'annual':      return new Date(now.setFullYear(now.getFullYear() + 1));
-        default:            return new Date(now.setFullYear(now.getFullYear() + 1)); // fallback → annual
+        default:            return new Date(now.setFullYear(now.getFullYear() + 1));
       }
     };
-    
-    const items: InsertInspectionItem[] = templates.map(tmpl => ({
+
+    // Strip rentalOnly (template-only field) before persisting to DB
+    const items: InsertInspectionItem[] = templates.map(({ rentalOnly: _r, ...tmpl }) => ({
       ...tmpl,
       roomId,
       nextInspectionDate: calculateNextDate(tmpl.frequency)
@@ -2535,7 +2575,7 @@ export class DatabaseStorage implements IStorage {
     return createdItems;
   }
 
-  private getInspectionItemTemplates(template: string): Omit<InsertInspectionItem, 'roomId'>[] {
+  private getInspectionItemTemplates(template: string): (Omit<InsertInspectionItem, 'roomId'> & { rentalOnly?: boolean })[] {
     // Roof-specific items for exterior structural maintenance
     if (template === 'roof') {
       return [
@@ -3154,6 +3194,30 @@ export class DatabaseStorage implements IStorage {
             'Clean debris bag or canister',
             'Check wheels and brushes',
             'Test cleaner timer settings'
+          ]
+        },
+
+        // ── QLD-specific mandatory pool safety certificate ────────────────
+        {
+          category: 'safety',
+          itemName: 'Pool Safety Certificate (QLD)',
+          description: 'QLD mandatory pool safety certificate every 2 years — required before selling or leasing. Must be issued by a licensed QLD pool safety inspector.',
+          frequency: 'biannual',
+          priority: 'critical',
+          inspectionType: 'professional',
+          photoRequired: true,
+          applicableStates: ['QLD'],
+          complianceMode: 'fixed',
+          complianceYears: 2,
+          legalRequirement: 'Building Act 1975 (QLD) — Pool Safety Standard',
+          checklistPoints: [
+            'Engage licensed QLD pool safety inspector (QBCC registered)',
+            'Verify pool fence height (minimum 1.2m) and structural integrity',
+            'Test self-closing and self-latching gate (latch must be on pool side)',
+            'Check for climbable objects within 900mm of fence',
+            'Confirm no fence gaps exceed 100mm',
+            'Verify CPR signage is current, weatherproof, and clearly visible',
+            'Obtain Pool Safety Certificate and lodge with QBCC'
           ]
         }
       ],
@@ -4856,6 +4920,52 @@ export class DatabaseStorage implements IStorage {
             'Look for moisture or mould inside wardrobe',
             'Verify wardrobe cannot tip if climbed'
           ]
+        },
+
+        // ── QLD-specific interconnected photoelectric smoke alarm (rental) ──
+        {
+          category: 'safety',
+          itemName: 'Interconnected Photoelectric Smoke Alarm (QLD)',
+          description: 'QLD rental properties must have interconnected photoelectric smoke alarms in all bedrooms by 1 Jan 2027. Triggering one alarm must activate all.',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional',
+          photoRequired: true,
+          applicableStates: ['QLD'],
+          complianceMode: 'fixed',
+          complianceYears: 1,
+          legalRequirement: 'Fire and Emergency Services Act 1990 (QLD) — interconnected photoelectric alarms by 1 Jan 2027',
+          rentalOnly: true,
+          checklistPoints: [
+            'Confirm alarm is photoelectric type (not ionisation) — check label',
+            'Confirm this bedroom alarm is interconnected to all other alarms in property',
+            'Test interconnected activation — triggering one must trigger all',
+            'Verify alarm is hardwired or has 10-year sealed lithium battery',
+            'Take photo showing alarm type label and interconnection wiring/wireless indicator'
+          ]
+        },
+
+        // ── NSW landlord smoke alarm obligation (rental) ───────────────────
+        {
+          category: 'safety',
+          itemName: 'Smoke Alarm Landlord Check (NSW)',
+          description: 'NSW landlords must ensure smoke alarms are operational at the start of each tenancy and within 30 days of tenant fault notification.',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'visual',
+          photoRequired: true,
+          applicableStates: ['NSW'],
+          complianceMode: 'fixed',
+          complianceYears: 1,
+          legalRequirement: 'Residential Tenancies Act 2010 (NSW) — annual / each tenancy',
+          rentalOnly: true,
+          checklistPoints: [
+            'Test smoke alarm — press test button and confirm alarm sounds',
+            'Replace batteries if needed',
+            'Confirm alarm is correctly located (bedroom, hallway, each storey)',
+            'Check alarm age — replace if older than 10 years (AS 3786)',
+            'Document check with photo showing alarm and manufacture date stamp'
+          ]
         }
       ];
     }
@@ -5055,6 +5165,52 @@ export class DatabaseStorage implements IStorage {
             'Check mounting is secure to ceiling',
             'Test integrated light if fitted',
             'Clean blade surfaces'
+          ]
+        },
+
+        // ── QLD-specific interconnected photoelectric smoke alarm (rental) ──
+        {
+          category: 'safety',
+          itemName: 'Interconnected Photoelectric Smoke Alarm (QLD)',
+          description: 'QLD rental properties must have interconnected photoelectric smoke alarms in all bedrooms by 1 Jan 2027. Triggering one alarm must activate all.',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional',
+          photoRequired: true,
+          applicableStates: ['QLD'],
+          complianceMode: 'fixed',
+          complianceYears: 1,
+          legalRequirement: 'Fire and Emergency Services Act 1990 (QLD) — interconnected photoelectric alarms by 1 Jan 2027',
+          rentalOnly: true,
+          checklistPoints: [
+            'Confirm alarm is photoelectric type (not ionisation) — check label',
+            'Confirm this bedroom alarm is interconnected to all other alarms in property',
+            'Test interconnected activation — triggering one must trigger all',
+            'Verify alarm is hardwired or has 10-year sealed lithium battery',
+            'Take photo showing alarm type label and interconnection wiring/wireless indicator'
+          ]
+        },
+
+        // ── NSW landlord smoke alarm obligation (rental) ───────────────────
+        {
+          category: 'safety',
+          itemName: 'Smoke Alarm Landlord Check (NSW)',
+          description: 'NSW landlords must ensure smoke alarms are operational at the start of each tenancy and within 30 days of tenant fault notification.',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'visual',
+          photoRequired: true,
+          applicableStates: ['NSW'],
+          complianceMode: 'fixed',
+          complianceYears: 1,
+          legalRequirement: 'Residential Tenancies Act 2010 (NSW) — annual / each tenancy',
+          rentalOnly: true,
+          checklistPoints: [
+            'Test smoke alarm — press test button and confirm alarm sounds',
+            'Replace batteries if needed',
+            'Confirm alarm is correctly located (bedroom, hallway, each storey)',
+            'Check alarm age — replace if older than 10 years (AS 3786)',
+            'Document check with photo showing alarm and manufacture date stamp'
           ]
         }
       ];
@@ -5370,6 +5526,31 @@ export class DatabaseStorage implements IStorage {
             'Inspect drawer runners and soft-close mechanisms',
             'Look for signs of moisture damage or pest activity',
             'Check shelf condition and brackets'
+          ]
+        },
+
+        // ── VIC-specific mandatory rental gas safety check ─────────────────
+        {
+          category: 'gas',
+          itemName: 'Gas Safety Check (Rental Compliance — VIC)',
+          description: 'Mandatory gas safety check every 2 years for VIC rental properties by licensed gasfitter. Gas Safety Certificate required within 14 days of check.',
+          frequency: 'biannual',
+          priority: 'critical',
+          inspectionType: 'professional',
+          photoRequired: true,
+          applicableStates: ['VIC'],
+          complianceMode: 'fixed',
+          complianceYears: 2,
+          legalRequirement: 'Residential Tenancies Act 1997 (VIC) — mandatory 2-year gas safety check',
+          rentalOnly: true,
+          checklistPoints: [
+            'Engage licensed gasfitter (VIC licensed — check via Energy Safe Victoria)',
+            'Inspect all gas appliances for correct operation and condition',
+            'Test for gas leaks at all connections with approved equipment',
+            'Check flues, ventilation, and combustion air supply',
+            'Verify all gas installations meet AS/NZS 5601',
+            'Issue Gas Safety Certificate and provide copy to tenant within 14 days',
+            'Retain certificate for minimum 5 years'
           ]
         }
       ];
@@ -6373,6 +6554,55 @@ export class DatabaseStorage implements IStorage {
             'Inspect for corrosion or moisture damage',
             'Verify panel door closes properly',
             'Check for proper clearance around panel'
+          ]
+        },
+
+        // ── VIC-specific mandatory rental electrical safety check ──────────
+        {
+          category: 'electrical',
+          itemName: 'Electrical Safety Check (Rental Compliance — VIC)',
+          description: 'Mandatory electrical safety check every 2 years for VIC rental properties by licensed electrician. Electrical Safety Certificate required within 14 days.',
+          frequency: 'biannual',
+          priority: 'critical',
+          inspectionType: 'professional',
+          photoRequired: true,
+          applicableStates: ['VIC'],
+          complianceMode: 'fixed',
+          complianceYears: 2,
+          legalRequirement: 'Residential Tenancies Act 1997 (VIC) — mandatory 2-year electrical safety check',
+          rentalOnly: true,
+          checklistPoints: [
+            'Engage licensed electrician (VIC licensed — check via Energy Safe Victoria)',
+            'Test all power points, switches, and light fittings',
+            'Inspect wiring, switchboard, and earthing',
+            'Test all RCDs — record trip time (must be < 300ms)',
+            'Check for double adapters, extension cord risks, or overloaded circuits',
+            'Issue Electrical Safety Certificate and provide copy to tenant within 14 days',
+            'Retain certificate for minimum 5 years'
+          ]
+        },
+
+        // ── QLD-specific mandatory rental electrical safety certificate ────
+        {
+          category: 'electrical',
+          itemName: 'Electrical Safety Certificate (QLD Rental)',
+          description: 'Mandatory electrical safety certificate every 5 years for QLD rental properties by a QBCC-licensed electrical contractor.',
+          frequency: 'annual',
+          priority: 'critical',
+          inspectionType: 'professional',
+          photoRequired: true,
+          applicableStates: ['QLD'],
+          complianceMode: 'fixed',
+          complianceYears: 5,
+          legalRequirement: 'Electrical Safety Act 2002 (QLD) — mandatory 5-year electrical safety certificate',
+          rentalOnly: true,
+          checklistPoints: [
+            'Engage QBCC-licensed electrical contractor',
+            'Test all power points and light switches',
+            'Inspect switchboard, earthing, and wiring condition',
+            'Test all RCDs/safety switches',
+            'Issue Electrical Safety Certificate and provide to tenant',
+            'Retain certificate for property records'
           ]
         }
       ];

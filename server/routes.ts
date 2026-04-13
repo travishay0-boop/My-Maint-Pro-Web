@@ -2337,7 +2337,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Automatically generate inspection items based on room type
       try {
-        const inspectionItems = await storage.createBulkInspectionItems(room.id, room.roomType, room.floor);
+        // Fetch property context to enable state/rental-based compliance item filtering
+        const property = await storage.getProperty(propertyId);
+        const propertyContext = property
+          ? { stateProvince: property.stateProvince, isRentalProperty: property.isRentalProperty, country: property.country }
+          : undefined;
+        const inspectionItems = await storage.createBulkInspectionItems(room.id, room.roomType, room.floor, propertyContext);
       } catch (inspectionError) {
         console.error('Failed to auto-generate inspection items:', inspectionError);
         // Don't fail the room creation if inspection items fail
@@ -3153,8 +3158,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const room = await storage.getPropertyRoom(roomId);
       const floor = room?.floor ?? undefined;
-      
-      const items = await storage.createBulkInspectionItems(roomId, template, floor);
+
+      // Fetch property context for state/rental compliance filtering
+      let propertyContext: { stateProvince?: string | null; isRentalProperty?: boolean | null; country?: string | null } | undefined;
+      if (room?.propertyId) {
+        const property = await storage.getProperty(room.propertyId);
+        if (property) {
+          propertyContext = {
+            stateProvince: property.stateProvince,
+            isRentalProperty: property.isRentalProperty,
+            country: property.country,
+          };
+        }
+      }
+
+      const items = await storage.createBulkInspectionItems(roomId, template, floor, propertyContext);
       res.status(201).json(items);
     } catch (error) {
       console.error('Error creating bulk inspection items:', error);

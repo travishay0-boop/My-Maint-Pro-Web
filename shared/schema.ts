@@ -156,6 +156,9 @@ export const properties = pgTable("properties", {
   name: text("name").notNull(),
   address: text("address").notNull(),
   country: text("country"), // auto-detected from address, determines compliance standards
+  stateProvince: text("state_province"), // AU: 'QLD'|'NSW'|'VIC'|'WA'|'SA'|'ACT'|'NT'|'TAS'; CA/US: province/state code
+  contextTags: jsonb("context_tags").$type<string[]>().default([]), // e.g. ['near_foliage','cyclone_zone','coastal_exposure','pool_area','high_rainfall']
+  isRentalProperty: boolean("is_rental_property").default(false), // rental obligations (VIC gas/elec certs, QLD smoke alarm deadlines, etc.)
   latitude: text("latitude"), // GPS coordinates
   longitude: text("longitude"), // GPS coordinates
   propertyType: text("property_type").notNull(), // 'apartment', 'house', 'commercial'
@@ -303,6 +306,9 @@ export const inspectionItems = pgTable("inspection_items", {
   legalRequirement: text("legal_requirement"), // legal requirement from spreadsheet
   isNotApplicable: boolean("is_not_applicable").default(false), // marked as N/A (e.g., no gas = gas inspection N/A)
   notApplicableReason: text("not_applicable_reason"), // optional reason why N/A
+  // State/compliance mode — controls whether condition multiplier applies
+  complianceMode: text("compliance_mode").default('condition_based'), // 'condition_based' | 'fixed' — fixed items ignore condition rating (mandatory statutory intervals)
+  applicableStates: jsonb("applicable_states").$type<string[]>(), // null = all states; ['QLD'] = QLD only; ['VIC','QLD'] = both
   // Trade assignment - links technical items to specific contractors
   tradeCategory: text("trade_category"), // 'plumbing', 'electrical', 'hvac', 'gas', etc. - for filtering contractors
   assignedContractorId: integer("assigned_contractor_id"), // reference to service_providers - who to call for this item
