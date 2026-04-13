@@ -1019,6 +1019,75 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateInspectionItem(id: number, updates: Partial<InspectionItem>): Promise<InspectionItem | undefined> {
+    // When condition is recorded and no explicit nextInspectionDate override is provided,
+    // recalculate the next due date using the condition multiplier
+    if (updates.condition !== undefined && updates.nextInspectionDate === undefined) {
+      // Single fetch for all fields needed by both Step 2 (condition multiplier)
+      // and Step 3 (compliance age escalation)
+      const [currentItem] = await this.database
+        .select({
+          frequency:            inspectionItems.frequency,
+          inspectionIntervalMonths: inspectionItems.inspectionIntervalMonths,
+          complianceYears:      inspectionItems.complianceYears,
+          lastReplacementDate:  inspectionItems.lastReplacementDate,
+          nextReplacementDue:   inspectionItems.nextReplacementDue,
+        })
+        .from(inspectionItems)
+        .where(eq(inspectionItems.id, id));
+
+      if (currentItem) {
+        // ── STEP 2: Condition multiplier ─────────────────────────────────────
+        const baseIntervalDays =
+          currentItem.frequency === 'monthly'     ? 30  :
+          currentItem.frequency === 'quarterly'   ? 90  :
+          currentItem.frequency === 'biannual'    ? 180 :
+          currentItem.frequency === 'semi-annual' ? 180 :
+          currentItem.frequency === 'annual'      ? 365 :
+          (currentItem.inspectionIntervalMonths || 12) * 30;
+
+        const multiplier =
+          updates.condition === 'good'    ? 1.0  :
+          updates.condition === 'average' ? 0.5  :
+          updates.condition === 'poor'    ? 0.25 : 1.0;
+
+        const adjustedDays = Math.round(baseIntervalDays * multiplier);
+        const conditionDate = new Date();
+        conditionDate.setDate(conditionDate.getDate() + adjustedDays);
+        updates = { ...updates, nextInspectionDate: conditionDate };
+
+        // ── STEP 3: Compliance age escalation ────────────────────────────────
+        // If this item has a compliance age (complianceYears), calculate its
+        // replacement deadline and use it if it falls sooner than the
+        // condition-adjusted date — regardless of condition rating.
+        if (currentItem.complianceYears) {
+          let complianceDeadline: Date | null = null;
+
+          if (currentItem.nextReplacementDue) {
+            // Explicit replacement due date already recorded — use it directly
+            complianceDeadline = new Date(currentItem.nextReplacementDue);
+
+          } else if (currentItem.lastReplacementDate) {
+            // Calculate from last replacement date + compliance interval
+            const years = currentItem.complianceYears;
+            complianceDeadline = new Date(currentItem.lastReplacementDate);
+            if (years % 1 === 0) {
+              complianceDeadline.setFullYear(complianceDeadline.getFullYear() + Math.floor(years));
+            } else {
+              const months = Math.round(years * 12);
+              complianceDeadline.setMonth(complianceDeadline.getMonth() + months);
+            }
+            // Persist the calculated nextReplacementDue back to the database
+            updates = { ...updates, nextReplacementDue: complianceDeadline };
+          }
+
+          // Override nextInspectionDate if compliance deadline is sooner
+          if (complianceDeadline && complianceDeadline < conditionDate) {
+            updates = { ...updates, nextInspectionDate: complianceDeadline };
+          }
+        }
+      }
+    }
+
     const [updatedItem] = await this.database.update(inspectionItems)
       .set(updates)
       .where(eq(inspectionItems.id, id))
@@ -1325,12 +1394,13 @@ export class DatabaseStorage implements IStorage {
         );
       
       if (existingSpecificItems.length > 0) {
-        // Calculate next inspection date based on frequency (default to 90 days if no frequency)
+        // Calculate next inspection date based on item's own frequency field
         const item = existingSpecificItems[0];
-        const frequencyDays = item.frequency === 'monthly' ? 30 :
-                              item.frequency === 'quarterly' ? 90 :
+        const frequencyDays = item.frequency === 'monthly'     ? 30 :
+                              item.frequency === 'quarterly'   ? 90 :
+                              item.frequency === 'biannual'    ? 180 :
                               item.frequency === 'semi-annual' ? 180 :
-                              item.frequency === 'annual' ? 365 : 90;
+                              item.frequency === 'annual'      ? 365 : 365;
         const nextInspectionDate = new Date(now.getTime() + frequencyDays * 24 * 60 * 60 * 1000);
         
         // Update existing items with inspection dates
@@ -1358,15 +1428,20 @@ export class DatabaseStorage implements IStorage {
       } else {
         // Only create new item if it makes sense for this room type
         if (this.shouldItemApplyToRoomType(itemName, room.roomType)) {
-          // Default to quarterly (90 days) for new items
-          const nextInspectionDate = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+          // Resolve interval from item name using compliance lookup — no hardcoded defaults
+          const intervalData = resolveInspectionInterval(countryCode || 'AU', itemName);
+          const intervalMonths = intervalData.intervalMonths || 12;
+          const frequencyLabel = intervalMonths <= 1  ? 'monthly' :
+                                 intervalMonths <= 3  ? 'quarterly' :
+                                 intervalMonths <= 6  ? 'biannual' : 'annual';
+          const nextInspectionDate = new Date(now.getTime() + intervalMonths * 30 * 24 * 60 * 60 * 1000);
           
           const newItem: InsertInspectionItem = {
             roomId: room.id,
             category: 'electrical', // Default category, could be made smarter
             itemName: itemName,
             description: `${itemName} inspection`,
-            frequency: 'quarterly',
+            frequency: frequencyLabel,
             priority: 'medium',
             isCompleted: true,
             completedDate: now,
@@ -2434,15 +2509,16 @@ export class DatabaseStorage implements IStorage {
       );
     }
     
-    // Calculate nextInspectionDate based on frequency
+    // Calculate nextInspectionDate based on frequency — always use item's own frequency, no arbitrary fallback
     const calculateNextDate = (frequency?: string): Date => {
       const now = new Date();
       switch (frequency) {
-        case 'monthly': return new Date(now.setMonth(now.getMonth() + 1));
-        case 'quarterly': return new Date(now.setMonth(now.getMonth() + 3));
-        case 'biannual': return new Date(now.setMonth(now.getMonth() + 6));
-        case 'annual': return new Date(now.setFullYear(now.getFullYear() + 1));
-        default: return new Date(now.setMonth(now.getMonth() + 6)); // Default to 6 months
+        case 'monthly':     return new Date(now.setMonth(now.getMonth() + 1));
+        case 'quarterly':   return new Date(now.setMonth(now.getMonth() + 3));
+        case 'biannual':    return new Date(now.setMonth(now.getMonth() + 6));
+        case 'semi-annual': return new Date(now.setMonth(now.getMonth() + 6)); // alias
+        case 'annual':      return new Date(now.setFullYear(now.getFullYear() + 1));
+        default:            return new Date(now.setFullYear(now.getFullYear() + 1)); // fallback → annual
       }
     };
     
