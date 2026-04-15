@@ -121,7 +121,7 @@ export interface IStorage {
   updateInspectionItem(id: number, updates: Partial<InspectionItem>): Promise<InspectionItem | undefined>;
   deleteInspectionItem(id: number): Promise<void>;
   bulkCheckInspectionItems(propertyId: number, itemName: string): Promise<InspectionItem[]>;
-  createBulkInspectionItems(roomId: number, template: string, floor?: number): Promise<InspectionItem[]>;
+  createBulkInspectionItems(roomId: number, template: string, floor?: number, propertyContext?: { stateProvince?: string | null; isRentalProperty?: boolean | null; country?: string | null }): Promise<InspectionItem[]>;
   getDueInspectionItemsCount(agencyId: number): Promise<{ dueToday: number; overdue: number; total: number }>;
   auditAndFixInspectionIntervals(): Promise<{ 
     totalItems: number; 
@@ -7845,7 +7845,7 @@ class SafeStorageWrapper implements IStorage {
   async updateInspectionItem(id: number, updates: Partial<InspectionItem>) { return this.requireDatabase().updateInspectionItem(id, updates); }
   async deleteInspectionItem(id: number) { return this.requireDatabase().deleteInspectionItem(id); }
   async bulkCheckInspectionItems(propertyId: number, itemName: string) { return this.requireDatabase().bulkCheckInspectionItems(propertyId, itemName); }
-  async createBulkInspectionItems(roomId: number, template: string, floor?: number) { return this.requireDatabase().createBulkInspectionItems(roomId, template, floor); }
+  async createBulkInspectionItems(roomId: number, template: string, floor?: number, propertyContext?: { stateProvince?: string | null; isRentalProperty?: boolean | null; country?: string | null }) { return this.requireDatabase().createBulkInspectionItems(roomId, template, floor, propertyContext); }
   async getDueInspectionItemsCount(agencyId: number) { return this.requireDatabase().getDueInspectionItemsCount(agencyId); }
   async auditAndFixInspectionIntervals() { return this.requireDatabase().auditAndFixInspectionIntervals(); }
   

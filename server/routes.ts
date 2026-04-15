@@ -1533,6 +1533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(property);
     } catch (error) {
+      console.error('[getProperty route error]', error);
       res.status(500).json({ message: "Failed to fetch property" });
     }
   });
@@ -2691,19 +2692,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const roomId = parseInt(req.params.roomId);
       const items = await storage.getInspectionItems(roomId);
       
-      // Debug: Log a professional item to verify inspectionType is present
-      const professionalItem = items.find(i => i.inspectionType === 'professional');
-      if (professionalItem) {
-        console.log('[DEBUG] Professional item found:', JSON.stringify({
-          id: professionalItem.id,
-          itemName: professionalItem.itemName,
-          inspectionType: professionalItem.inspectionType,
-          linkedCertificateId: professionalItem.linkedCertificateId,
-          certificateExpiryDate: professionalItem.certificateExpiryDate
-        }));
-      }
+      // Add computed baseIntervalDays for condition-multiplier tests
+      const itemsWithInterval = items.map(i => ({
+        ...i,
+        baseIntervalDays:
+          i.frequency === 'monthly'   ? 30  :
+          i.frequency === 'quarterly' ? 90  :
+          i.frequency === 'biannual'  ? 180 :
+          i.frequency === 'annual'    ? 365 :
+          (i.inspectionIntervalMonths || 12) * 30,
+      }));
       
-      res.json(items);
+      res.json(itemsWithInterval);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch inspection items" });
     }
@@ -2883,7 +2883,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/inspection-items/:itemId", authenticateUser, async (req: AuthenticatedRequest, res) => {
     try {
       const itemId = parseInt(req.params.itemId);
-      const { isCompleted, completedDate, ...otherUpdates } = req.body;
+      const { isCompleted, completedDate, conditionRating, ...otherUpdates } = req.body;
+      // Map conditionRating → condition (API accepts either form)
+      if (conditionRating !== undefined) otherUpdates.condition = conditionRating;
       
       console.log('PATCH /api/inspection-items/' + itemId, 'Body:', req.body);
       
@@ -2960,6 +2962,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const updates: any = { ...otherUpdates };
+      
+      // Convert any date string fields to Date objects for Drizzle ORM
+      for (const dateField of ['nextInspectionDate', 'lastInspectedDate', 'lastReplacementDate', 'nextReplacementDue', 'certificateExpiryDate', 'certificateCoveredAt']) {
+        if (updates[dateField] && typeof updates[dateField] === 'string') {
+          updates[dateField] = new Date(updates[dateField]);
+        }
+      }
       
       // Handle completion status changes
       if (isCompleted !== undefined) {
