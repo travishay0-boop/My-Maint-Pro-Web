@@ -1074,6 +1074,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── Mobile auth verify endpoint ───────────────────────────────────────────
+  // Purpose: lets the mobile app check session validity when coming to the
+  // foreground (after iPad sleep, screen lock, etc.) WITHOUT risking a false
+  // logout from a transient DB error.
+  //
+  // Rules the mobile app MUST follow:
+  //   200 → user is authenticated; refresh local user data from the response
+  //   401 → user is genuinely logged out; clear stored credentials and redirect to login
+  //   503 → server/DB is temporarily unavailable; show a "Reconnecting…" state,
+  //         DO NOT clear credentials, retry after a few seconds
+  //
+  // This endpoint intentionally lives OUTSIDE the shared authenticateUser
+  // middleware so it can return precise status codes with its own retry logic.
+  app.get("/api/auth/verify", async (req, res) => {
+    const userId = req.headers['x-user-id'];
+
+    if (!userId || typeof userId !== 'string') {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const parsedId = parseInt(userId, 10);
+    if (isNaN(parsedId)) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Retry once on transient DB failure (covers the stale-pool-after-sleep case)
+    let user;
+    let lastErr;
+    for (let attempt = 0; attempt <= 1; attempt++) {
+      try {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 300));
+        user = await storage.getUser(parsedId);
+        lastErr = undefined;
+        break;
+      } catch (err) {
+        lastErr = err;
+        console.error(`/api/auth/verify DB error (attempt ${attempt + 1}/2):`, err);
+      }
+    }
+
+    if (lastErr) {
+      return res.status(503).json({
+        message: 'Service temporarily unavailable. Please try again.',
+        code: 'DB_UNAVAILABLE',
+      });
+    }
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: 'Invalid user' });
+    }
+
+    res.json({ ...user, password: undefined });
+  });
+
   // Apply authentication middleware to all protected routes
   app.use("/api", authenticateUser);
 
