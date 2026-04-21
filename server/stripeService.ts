@@ -111,6 +111,12 @@ export class StripeService {
     return await stripe.billingPortal.sessions.create({ customer: customerId, return_url: returnUrl });
   }
 
+  // Cancels a Stripe subscription immediately (used during account deletion).
+  async cancelSubscriptionImmediately(subscriptionId: string): Promise<void> {
+    const stripe = await getUncachableStripeClient();
+    await stripe.subscriptions.cancel(subscriptionId);
+  }
+
   async validatePromoCode(code: string): Promise<{ valid: boolean; promoCode?: any; error?: string }> {
     const [promo] = await db.select().from(promoCodes).where(eq(promoCodes.code, code.toUpperCase()));
     if (!promo) return { valid: false, error: 'Invalid promo code' };

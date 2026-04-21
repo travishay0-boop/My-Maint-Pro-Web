@@ -1136,6 +1136,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ ...req.user, password: undefined });
   });
 
+  // ── Permanent account deletion ──────────────────────────────────────────────
+  // Required by Apple App Store guidelines (users must be able to delete their account).
+  // Steps: verify password → cancel Stripe → wipe all DB data → delete user record.
+  app.delete("/api/auth/account", async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = req.user!;
+      const { password } = req.body;
+
+      // Step 1 — Password confirmation (nothing is deleted if this fails)
+      if (!password || typeof password !== 'string') {
+        return res.status(400).json({ message: 'Password is required to confirm account deletion.' });
+      }
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(403).json({ message: 'Incorrect password. Account not deleted.' });
+      }
+
+      // Step 2 — Cancel Stripe subscription (best-effort; don't abort deletion if it fails)
+      if (user.stripeSubscriptionId) {
+        try {
+          const { stripeService } = await import('./stripeService');
+          await stripeService.cancelSubscriptionImmediately(user.stripeSubscriptionId);
+        } catch (stripeErr) {
+          console.error(`[deleteAccount] Stripe cancellation failed for user ${user.id}:`, stripeErr);
+          // Continue — we still delete the account even if Stripe call fails
+        }
+      }
+
+      // Step 3 — Wipe all DB data and delete user record
+      const { agencyDeleted } = await storage.deleteUserAccount(user.id);
+
+      // Step 4 — Destroy any active server session
+      if (req.session) {
+        req.session.destroy(() => {});
+      }
+
+      console.log(`[deleteAccount] User ${user.id} (${user.email}) permanently deleted. agencyDeleted=${agencyDeleted}`);
+      res.json({ message: 'Account permanently deleted.' });
+    } catch (error: any) {
+      console.error('Account deletion error:', error);
+      res.status(500).json({ message: 'An error occurred while deleting your account. Please try again.' });
+    }
+  });
+
   // TOS acceptance endpoint
   app.post("/api/user/accept-tos", async (req: AuthenticatedRequest, res) => {
     try {

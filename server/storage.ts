@@ -4,7 +4,7 @@ import {
   notificationLogs, serviceProviders, activityLogs, propertyRooms, inspectionItems,
   inspectionPeriods, complianceCertificates, passwordResetTokens,
   inspectionReports, userNotificationPreferences, userFeedback, certificateSubmissions,
-  propertyTemplates, inspectionItemSnapshots,
+  propertyTemplates, inspectionItemSnapshots, emailVerificationTokens,
   PROFESSIONAL_INSPECTION_KEYWORDS,
   type User, type InsertUser, type Agency, type InsertAgency,
   type Property, type InsertProperty, type MaintenanceTemplate, type InsertMaintenanceTemplate,
@@ -37,6 +37,7 @@ export interface IStorage {
   updateUser(id: number, updates: Partial<User>): Promise<User | undefined>;
   getUsersByAgency(agencyId: number): Promise<User[]>;
   getAllUsers(): Promise<User[]>;
+  deleteUserAccount(userId: number): Promise<{ agencyDeleted: boolean }>;
 
   // Password reset tokens
   createPasswordResetToken(token: InsertPasswordResetToken): Promise<PasswordResetToken>;
@@ -7740,6 +7741,138 @@ export class DatabaseStorage implements IStorage {
       .from(inspectionItems)
       .where(and(...conditions));
   }
+
+  // Permanently delete a user account and all associated data.
+  // Stripe subscription cancellation is handled by the caller (route) before this is called.
+  // Returns { agencyDeleted: true } if the user's agency was also wiped.
+  async deleteUserAccount(userId: number): Promise<{ agencyDeleted: boolean }> {
+    const db = this.database;
+
+    // ── 1. Load the user ────────────────────────────────────────────────────
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw new Error(`User ${userId} not found`);
+
+    let agencyDeleted = false;
+    const agencyId = user.agencyId;
+
+    // ── 2. Decide agency handling ────────────────────────────────────────────
+    // If user belongs to an agency, check whether they are the sole member.
+    // Sole member → delete the entire agency and all its data.
+    // Multiple members → disassociate this user; leave agency intact for others.
+    let isSoleAgencyMember = false;
+    if (agencyId) {
+      const agencyMembers = await db.select({ id: users.id })
+        .from(users)
+        .where(eq(users.agencyId, agencyId));
+      isSoleAgencyMember = agencyMembers.length <= 1;
+    }
+
+    // ── 3. Full agency cascade delete (sole admin only) ──────────────────────
+    if (agencyId && isSoleAgencyMember) {
+      // 3a. Get all property IDs for the agency
+      const agencyProperties = await db.select({ id: properties.id })
+        .from(properties)
+        .where(eq(properties.agencyId, agencyId));
+      const propertyIds = agencyProperties.map(p => p.id);
+
+      if (propertyIds.length > 0) {
+        // 3b. Get all room IDs for those properties
+        const agencyRooms = await db.select({ id: propertyRooms.id })
+          .from(propertyRooms)
+          .where(inArray(propertyRooms.propertyId, propertyIds));
+        const roomIds = agencyRooms.map(r => r.id);
+
+        if (roomIds.length > 0) {
+          // 3c. Get all inspection item IDs for those rooms
+          const agencyItems = await db.select({ id: inspectionItems.id })
+            .from(inspectionItems)
+            .where(inArray(inspectionItems.roomId, roomIds));
+          const itemIds = agencyItems.map(i => i.id);
+
+          // 3d. Delete inspection_item_snapshots (FK → inspection_items)
+          if (itemIds.length > 0) {
+            await db.delete(inspectionItemSnapshots)
+              .where(inArray(inspectionItemSnapshots.inspectionItemId, itemIds));
+          }
+
+          // 3e. Delete inspection_items
+          await db.delete(inspectionItems)
+            .where(inArray(inspectionItems.roomId, roomIds));
+
+          // 3f. Delete property_rooms
+          await db.delete(propertyRooms)
+            .where(inArray(propertyRooms.propertyId, propertyIds));
+        }
+
+        // 3g. Delete properties — cascades:
+        //   inspection_periods → inspection_reports
+        //   compliance_certificates
+        //   certificate_submissions → certificate_verifications
+        await db.delete(properties)
+          .where(inArray(properties.id, propertyIds));
+      }
+
+      // 3h. Delete agency-level records
+      await db.delete(maintenanceTasks)
+        .where(eq(maintenanceTasks.agencyId, agencyId));
+
+      // Only delete agency-specific templates (system templates have agencyId = null)
+      await db.delete(maintenanceTemplates)
+        .where(eq(maintenanceTemplates.agencyId, agencyId));
+
+      await db.delete(serviceProviders)
+        .where(eq(serviceProviders.agencyId, agencyId));
+
+      await db.delete(notificationLogs)
+        .where(eq(notificationLogs.agencyId, agencyId));
+
+      // 3i. Delete the agency itself
+      await db.delete(agencies).where(eq(agencies.id, agencyId));
+
+      agencyDeleted = true;
+    } else if (agencyId && !isSoleAgencyMember) {
+      // Multi-member agency — just disassociate this user
+      await db.update(users)
+        .set({ agencyId: null })
+        .where(eq(users.id, userId));
+    }
+
+    // ── 4. Property owner cleanup ────────────────────────────────────────────
+    // Nullify ownerId on any properties this user owns (agency still holds them)
+    if (user.role === 'property_owner') {
+      await db.update(properties)
+        .set({ ownerId: null })
+        .where(eq(properties.ownerId, userId));
+    }
+
+    // ── 5. Nullify processedBy references in certificate_submissions ─────────
+    // The submission record stays; we just clear the processor link
+    await db.update(certificateSubmissions)
+      .set({ processedBy: null })
+      .where(eq(certificateSubmissions.processedBy, userId));
+
+    // ── 6. Delete user-level data ────────────────────────────────────────────
+    await db.delete(emailVerificationTokens)
+      .where(eq(emailVerificationTokens.userId, userId));
+
+    await db.delete(passwordResetTokens)
+      .where(eq(passwordResetTokens.userId, userId));
+
+    await db.delete(userNotificationPreferences)
+      .where(eq(userNotificationPreferences.userId, userId));
+
+    await db.delete(userFeedback)
+      .where(eq(userFeedback.userId, userId));
+
+    await db.delete(activityLogs)
+      .where(eq(activityLogs.userId, userId));
+
+    // ── 7. Delete the user record itself ─────────────────────────────────────
+    await db.delete(users).where(eq(users.id, userId));
+
+    console.log(`[deleteUserAccount] User ${userId} permanently deleted. agencyDeleted=${agencyDeleted}`);
+    return { agencyDeleted };
+  }
 }
 
 // Safe storage initialization - wraps database calls to throw DatabaseUnavailableError
@@ -7772,6 +7905,7 @@ class SafeStorageWrapper implements IStorage {
   async updateUser(id: number, updates: Partial<User>) { return this.requireDatabase().updateUser(id, updates); }
   async getUsersByAgency(agencyId: number) { return this.requireDatabase().getUsersByAgency(agencyId); }
   async getAllUsers() { return this.requireDatabase().getAllUsers(); }
+  async deleteUserAccount(userId: number) { return this.requireDatabase().deleteUserAccount(userId); }
   
   async createPasswordResetToken(token: InsertPasswordResetToken) { return this.requireDatabase().createPasswordResetToken(token); }
   async findValidResetToken(userId: number, tokenHash: string) { return this.requireDatabase().findValidResetToken(userId, tokenHash); }
