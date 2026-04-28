@@ -3799,6 +3799,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Approve certificate submission — atomically creates a compliance_certificates record and marks the submission processed
+  app.post("/api/certificate-submissions/:id/approve", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const submission = await storage.getCertificateSubmission(id);
+
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+      if (req.user!.agencyId !== submission.agencyId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Determine issue/expiry dates — try to parse from AI notes, fall back to sensible defaults
+      const now = new Date();
+      let issueDate = now;
+      let expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+      if (submission.notes) {
+        const issuedMatch = submission.notes.match(/(?:Issued|Issue Date)[=:]?\s*(\d{4}-\d{2}-\d{2})/i);
+        if (issuedMatch) issueDate = new Date(issuedMatch[1]);
+
+        const expiryMatch = submission.notes.match(/(?:Expiry|Expiry Date|Expires)[=:]?\s*(\d{4}-\d{2}-\d{2})/i);
+        if (expiryMatch) expiryDate = new Date(expiryMatch[1]);
+      }
+
+      // Ensure expiry is always after issue
+      if (expiryDate <= issueDate) {
+        expiryDate = new Date(issueDate.getTime() + 365 * 24 * 60 * 60 * 1000);
+      }
+
+      // Format certificate type into a human-readable name (e.g. smoke_alarm → Smoke Alarm Certificate)
+      const certType = submission.certificateType || 'general';
+      const certificateName = certType
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, (c) => c.toUpperCase()) + ' Certificate';
+
+      // 1. Create the compliance_certificates record
+      const newCertificate = await storage.createComplianceCertificate({
+        agencyId: submission.agencyId,
+        propertyId: submission.propertyId,
+        certificateType: certType,
+        certificateName,
+        issueDate,
+        expiryDate,
+        certifyingBody: submission.senderName || submission.senderEmail,
+        fileUrl: submission.fileUrl ?? undefined,
+        notes: submission.notes ?? undefined,
+        status: 'active',
+        reminderDays: 30,
+        inspectionFrequencyMonths: 12,
+      });
+
+      // 2. Update the submission to processed and link to the new certificate
+      const updatedSubmission = await storage.updateCertificateSubmission(id, {
+        status: 'processed',
+        linkedCertificateId: newCertificate.id,
+        processedAt: now,
+        processedBy: req.user!.id,
+      });
+
+      // 3. Link matching inspection items (best-effort, same logic as manual PATCH approval)
+      try {
+        const itemsToUpdate = getCertificateInspectionItems(certType);
+        if (itemsToUpdate.length > 0) {
+          const propertyRoomsList = await storage.getPropertyRooms(submission.propertyId);
+          for (const room of propertyRoomsList) {
+            const items = await storage.getInspectionItems(room.id);
+            for (const item of items) {
+              const matches = itemsToUpdate.some(pattern =>
+                item.itemName.toLowerCase().includes(pattern.toLowerCase())
+              );
+              if (matches) {
+                const canAutoComplete = !item.photoRequired || !!item.photoUrl;
+                await storage.updateInspectionItem(item.id, {
+                  linkedCertificateId: submission.id,
+                  certificateExpiryDate: expiryDate,
+                  certificateCoveredAt: now,
+                  isCompleted: canAutoComplete,
+                  lastInspectedDate: canAutoComplete ? now : (item.lastInspectedDate ?? undefined),
+                });
+              }
+            }
+          }
+        }
+      } catch (linkError) {
+        console.error('[approve] Error linking inspection items:', linkError);
+      }
+
+      console.log(`[approve] Submission ${id} approved — certificate #${newCertificate.id} created`);
+      res.json({ submission: updatedSubmission, certificate: newCertificate });
+    } catch (error) {
+      console.error('Error approving certificate submission:', error);
+      res.status(500).json({ message: "Failed to approve certificate submission" });
+    }
+  });
+
+  // Reject certificate submission
+  app.post("/api/certificate-submissions/:id/reject", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const submission = await storage.getCertificateSubmission(id);
+
+      if (!submission) {
+        return res.status(404).json({ message: "Submission not found" });
+      }
+      if (req.user!.agencyId !== submission.agencyId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const updatedSubmission = await storage.updateCertificateSubmission(id, {
+        status: 'rejected',
+        processedAt: new Date(),
+        processedBy: req.user!.id,
+        notes: req.body.notes ?? (submission.notes ?? undefined),
+      });
+
+      res.json(updatedSubmission);
+    } catch (error) {
+      console.error('Error rejecting certificate submission:', error);
+      res.status(500).json({ message: "Failed to reject certificate submission" });
+    }
+  });
+
   // Delete certificate submission
   app.delete("/api/certificate-submissions/:id", authenticateUser, async (req: AuthenticatedRequest, res) => {
     try {

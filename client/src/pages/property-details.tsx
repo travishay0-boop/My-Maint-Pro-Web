@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -95,6 +96,11 @@ export default function PropertyDetails() {
   const roomsSectionRef = useRef<HTMLDivElement>(null);
   const [hasAutoOpened, setHasAutoOpened] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [confirmSubmissionAction, setConfirmSubmissionAction] = useState<{
+    id: number;
+    action: 'approve' | 'reject';
+    subject: string;
+  } | null>(null);
 
   const propertyId = parseInt(id || '0');
 
@@ -218,53 +224,63 @@ export default function PropertyDetails() {
     },
   });
 
-  // Approve certificate submission mutation (marks as processed and links inspection items)
+  // Approve certificate submission — calls the dedicated /approve endpoint which atomically
+  // creates a compliance_certificates record and marks the submission as processed
   const approveSubmissionMutation = useMutation({
     mutationFn: async (submissionId: number) => {
-      const response = await fetch(`/api/certificate-submissions/${submissionId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/certificate-submissions/${submissionId}/approve`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-User-ID': user?.id?.toString() || '',
           'X-Agency-ID': user?.agencyId?.toString() || '',
         },
-        body: JSON.stringify({ status: 'processed' }),
       });
-      if (!response.ok) throw new Error('Failed to approve submission');
-      return response.json();
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as any).message || 'Failed to approve submission');
+      }
+      return response.json() as Promise<{ submission: CertificateSubmission; certificate: ComplianceCertificate }>;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/certificate-submissions', propertyId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/properties', propertyId, 'certificates'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/certificates'] });
       queryClient.invalidateQueries({ queryKey: ['/api/properties', propertyId, 'inspection-items'] });
       queryClient.invalidateQueries({ queryKey: ['/api/properties', propertyId, 'rooms'] });
-      toast({ title: 'Approved', description: 'Certificate approved and linked to inspection items' });
+      toast({
+        title: 'Certificate created',
+        description: `Certificate #${data.certificate.id} has been created and linked to this property.`,
+      });
     },
-    onError: () => {
-      toast({ title: 'Error', description: 'Failed to approve submission', variant: 'destructive' });
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message || 'Failed to approve submission', variant: 'destructive' });
     },
   });
 
-  // Reject certificate submission mutation
+  // Reject certificate submission
   const rejectSubmissionMutation = useMutation({
     mutationFn: async (submissionId: number) => {
-      const response = await fetch(`/api/certificate-submissions/${submissionId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/certificate-submissions/${submissionId}/reject`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-User-ID': user?.id?.toString() || '',
           'X-Agency-ID': user?.agencyId?.toString() || '',
         },
-        body: JSON.stringify({ status: 'rejected' }),
       });
-      if (!response.ok) throw new Error('Failed to reject submission');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error((err as any).message || 'Failed to reject submission');
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/certificate-submissions', propertyId] });
-      toast({ title: 'Rejected', description: 'Certificate submission rejected' });
+      toast({ title: 'Rejected', description: 'Certificate submission has been rejected.' });
     },
-    onError: () => {
-      toast({ title: 'Error', description: 'Failed to reject submission', variant: 'destructive' });
+    onError: (err: Error) => {
+      toast({ title: 'Error', description: err.message || 'Failed to reject submission', variant: 'destructive' });
     },
   });
 
@@ -878,34 +894,50 @@ export default function PropertyDetails() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-1 ml-2">
-                          <Badge 
-                            variant={submission.status === 'pending' ? 'default' : 'secondary'}
-                            className={`text-xs ${
-                              submission.status === 'pending' 
-                                ? 'bg-blue-500' 
-                                : submission.status === 'processed'
-                                ? 'bg-green-100 text-green-800'
-                                : submission.status === 'rejected'
-                                ? 'bg-red-100 text-red-800'
-                                : submission.status === 'rejected_address_mismatch'
-                                ? 'bg-amber-100 text-amber-800'
-                                : submission.status === 'review_required'
-                                ? 'bg-orange-100 text-orange-800'
-                                : 'bg-gray-100 text-gray-600'
-                            }`}
-                          >
-                            {submission.status === 'rejected_address_mismatch' ? 'Address Mismatch' : submission.status}
-                          </Badge>
-                          {(submission.status === 'pending' || submission.status === 'processing' || submission.status === 'rejected_address_mismatch' || submission.status === 'review_required') && (
+                        <div className="flex items-center space-x-1 ml-2 flex-wrap gap-y-1">
+                          {/* Processed: show certificate link instead of action buttons */}
+                          {submission.status === 'processed' && submission.linkedCertificateId ? (
+                            <Badge className="text-xs bg-green-100 text-green-800 border-green-200 whitespace-nowrap">
+                              Certificate #{submission.linkedCertificateId} created
+                            </Badge>
+                          ) : (
+                            <Badge 
+                              variant={submission.status === 'pending' ? 'default' : 'secondary'}
+                              className={`text-xs ${
+                                submission.status === 'pending' 
+                                  ? 'bg-blue-500' 
+                                  : submission.status === 'processed'
+                                  ? 'bg-green-100 text-green-800'
+                                  : submission.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800'
+                                  : submission.status === 'rejected_address_mismatch'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : submission.status === 'pending_address_review'
+                                  ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-gray-100 text-gray-600'
+                              }`}
+                            >
+                              {submission.status === 'rejected_address_mismatch'
+                                ? 'Address Mismatch'
+                                : submission.status === 'pending_address_review'
+                                ? 'Review Required'
+                                : submission.status}
+                            </Badge>
+                          )}
+                          {/* Approve / Reject buttons for actionable statuses */}
+                          {(['pending', 'new', 'reviewed', 'processing', 'rejected_address_mismatch', 'pending_address_review'] as string[]).includes(submission.status) && (
                             <>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0 text-primary hover:text-primary/80 hover:bg-primary/10"
-                                onClick={() => approveSubmissionMutation.mutate(submission.id)}
+                                onClick={() => setConfirmSubmissionAction({
+                                  id: submission.id,
+                                  action: 'approve',
+                                  subject: submission.subject || 'this submission',
+                                })}
                                 disabled={approveSubmissionMutation.isPending}
-                                title="Approve certificate"
+                                title="Approve — creates a certificate record"
                                 data-testid={`button-approve-submission-${submission.id}`}
                               >
                                 <Check className="h-3 w-3" />
@@ -914,7 +946,11 @@ export default function PropertyDetails() {
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0 text-orange-500 hover:text-orange-700 hover:bg-orange-50"
-                                onClick={() => rejectSubmissionMutation.mutate(submission.id)}
+                                onClick={() => setConfirmSubmissionAction({
+                                  id: submission.id,
+                                  action: 'reject',
+                                  subject: submission.subject || 'this submission',
+                                })}
                                 disabled={rejectSubmissionMutation.isPending}
                                 title="Reject certificate"
                                 data-testid={`button-reject-submission-${submission.id}`}
@@ -1965,6 +2001,46 @@ export default function PropertyDetails() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Approve / Reject confirmation dialog */}
+      <AlertDialog
+        open={!!confirmSubmissionAction}
+        onOpenChange={(open) => { if (!open) setConfirmSubmissionAction(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmSubmissionAction?.action === 'approve'
+                ? 'Approve this certificate submission?'
+                : 'Reject this certificate submission?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmSubmissionAction?.action === 'approve'
+                ? `Approving "${confirmSubmissionAction.subject}" will create a new compliance certificate record and link it to this property. This action cannot be undone.`
+                : `Rejecting "${confirmSubmissionAction?.subject}" will mark it as rejected. The submission will remain visible for your records.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={confirmSubmissionAction?.action === 'approve'
+                ? 'bg-primary hover:bg-primary/90'
+                : 'bg-red-600 hover:bg-red-700 text-white'}
+              onClick={() => {
+                if (!confirmSubmissionAction) return;
+                if (confirmSubmissionAction.action === 'approve') {
+                  approveSubmissionMutation.mutate(confirmSubmissionAction.id);
+                } else {
+                  rejectSubmissionMutation.mutate(confirmSubmissionAction.id);
+                }
+                setConfirmSubmissionAction(null);
+              }}
+            >
+              {confirmSubmissionAction?.action === 'approve' ? 'Approve & Create Certificate' : 'Reject Submission'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </div>
   );
