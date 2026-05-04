@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -33,10 +33,11 @@ export default function Settings() {
   const [deletePassword, setDeletePassword] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  if (!user) {
-    setLocation('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) setLocation('/login');
+  }, [user]);
+
+  if (!user) return null;
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();

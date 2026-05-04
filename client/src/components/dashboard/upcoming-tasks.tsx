@@ -35,7 +35,7 @@ export default function UpcomingTasks() {
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['/api/maintenance-tasks/upcoming', user?.agencyId],
     queryFn: async () => {
-      if (!user?.agencyId) throw new Error('No agency ID');
+      if (!user?.agencyId) return [];
       const response = await authenticatedApiRequest('GET', `/api/maintenance-tasks/upcoming/${user.agencyId}?days=30`);
       return response.json() as Promise<TaskWithDetails[]>;
     },

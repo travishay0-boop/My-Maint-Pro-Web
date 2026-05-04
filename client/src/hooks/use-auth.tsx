@@ -26,7 +26,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const token = localStorage.getItem('token');
 
     if (savedUser && token) {
-      const userData = JSON.parse(savedUser);
+      let userData;
+      try {
+        userData = JSON.parse(savedUser);
+      } catch {
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setIsLoading(false);
+        return;
+      }
       setUser(userData);
       applyTheme(userData.userType || 'agency');
 

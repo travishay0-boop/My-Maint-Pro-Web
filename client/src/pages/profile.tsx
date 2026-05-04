@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -10,10 +11,11 @@ export default function Profile() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  if (!user) {
-    setLocation('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) setLocation('/login');
+  }, [user]);
+
+  if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -93,7 +95,7 @@ export default function Profile() {
                 <div>
                   <Label>Role</Label>
                   <Input 
-                    value={user.role.replace('_', ' ')} 
+                    value={(user.role || '').replace('_', ' ')} 
                     disabled 
                     className="mt-1 capitalize"
                     data-testid="input-role"
@@ -102,7 +104,7 @@ export default function Profile() {
                 <div>
                   <Label>User Type</Label>
                   <Input 
-                    value={user.userType.replace('_', ' ')} 
+                    value={(user.userType || '').replace('_', ' ')} 
                     disabled 
                     className="mt-1 capitalize"
                     data-testid="input-user-type"
@@ -132,7 +134,7 @@ export default function Profile() {
                 <div>
                   <Label>Member Since</Label>
                   <Input 
-                    value={new Date(user.createdAt).toLocaleDateString()} 
+                    value={user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'} 
                     disabled 
                     className="mt-1"
                   />
