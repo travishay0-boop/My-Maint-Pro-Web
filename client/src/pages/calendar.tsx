@@ -42,7 +42,7 @@ interface Tier {
 const TIERS: Tier[] = [
   {
     id: 'overdue',
-    label: 'Overdue',
+    label: 'Time to Act',
     daysLabel: 'Past due',
     headerClass: 'bg-red-50 border-b border-red-200',
     labelClass: 'text-red-700',
@@ -53,7 +53,7 @@ const TIERS: Tier[] = [
   },
   {
     id: 'act_now',
-    label: 'Act Now',
+    label: 'This Week',
     daysLabel: '0–7 days',
     headerClass: 'bg-orange-50 border-b border-orange-200',
     labelClass: 'text-orange-700',
@@ -86,7 +86,7 @@ const TIERS: Tier[] = [
   },
   {
     id: 'scheduled',
-    label: 'Scheduled',
+    label: 'All Clear',
     daysLabel: '30+ days',
     headerClass: 'bg-gray-50 border-b border-gray-200',
     labelClass: 'text-gray-600',
@@ -195,7 +195,7 @@ export default function Calendar() {
         <Card>
           <CardContent className="py-12 text-center">
             <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No Scheduled Inspections</h3>
+            <h3 className="text-lg font-semibold mb-2">No Upcoming Inspections</h3>
             <p className="text-muted-foreground mb-4">
               Complete inspection items to automatically schedule future inspections based on country-specific intervals.
             </p>

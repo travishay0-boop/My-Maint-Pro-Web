@@ -5,6 +5,8 @@ import fs from "fs";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
 import { storage } from "./storage";
 import { notificationService } from "./services/notifications";
 import { authenticateUser, requireRole, requireAgencyAccess, type AuthenticatedRequest } from "./middleware/auth";
@@ -260,13 +262,24 @@ function detectCertificateType(subject?: string, fileName?: string): string | nu
 
 // Health check endpoint for deployment platforms
 export function setupHealthCheck(app: Express) {
-  app.get("/api/health", (_req, res) => {
-    res.status(200).json({ 
-      status: "ok", 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      environment: process.env.NODE_ENV || 'development'
-    });
+  app.get('/api/health', async (_req, res) => {
+    try {
+      await db.execute(sql`SELECT 1`);
+      return res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development',
+        db: 'connected',
+      });
+    } catch (e: any) {
+      return res.status(503).json({
+        status: 'error',
+        timestamp: new Date().toISOString(),
+        db: 'unavailable',
+        error: e.message,
+      });
+    }
   });
 
 }
