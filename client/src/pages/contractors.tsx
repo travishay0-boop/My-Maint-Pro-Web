@@ -89,6 +89,7 @@ export default function Contractors() {
   const [editingContractor, setEditingContractor] = useState<ServiceProvider | null>(null);
   const [formData, setFormData] = useState<ContractorFormData>(emptyFormData);
   const [filterCategory, setFilterCategory] = useState<TradeCategory | 'all'>('all');
+  const [hoverRatings, setHoverRatings] = useState<Record<number, number>>({});
 
   const { data: contractors = [], isLoading } = useQuery<ServiceProvider[]>({
     queryKey: ['/api/contractors', user?.agencyId],
@@ -165,6 +166,21 @@ export default function Contractors() {
         title: 'Error',
         description: 'Failed to delete contractor. Please try again.',
       });
+    },
+  });
+
+  const ratingMutation = useMutation({
+    mutationFn: async ({ id, rating }: { id: number; rating: number }) => {
+      const response = await apiRequest(`/api/contractors/${id}`, 'PATCH', { rating });
+      if (!response.ok) throw new Error('Failed to save rating');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/contractors'] });
+      toast({ title: 'Rating saved' });
+    },
+    onError: () => {
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to save rating.' });
     },
   });
 
@@ -497,6 +513,32 @@ export default function Contractors() {
                         </Badge>
                       </div>
                       
+                      <div className="flex items-center gap-1 my-2">
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const active = (hoverRatings[contractor.id] ?? contractor.rating ?? 0) >= star;
+                          return (
+                            <button
+                              key={star}
+                              type="button"
+                              className="p-0.5 focus:outline-none"
+                              onMouseEnter={() => setHoverRatings(prev => ({ ...prev, [contractor.id]: star }))}
+                              onMouseLeave={() => setHoverRatings(prev => { const n = { ...prev }; delete n[contractor.id]; return n; })}
+                              onClick={() => ratingMutation.mutate({ id: contractor.id, rating: star === contractor.rating ? 0 : star })}
+                              title={`Rate ${star} star${star !== 1 ? 's' : ''}`}
+                            >
+                              <Star
+                                className={`w-5 h-5 transition-colors ${active ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                              />
+                            </button>
+                          );
+                        })}
+                        {contractor.rating ? (
+                          <span className="text-xs text-gray-500 ml-1">{contractor.rating}/5</span>
+                        ) : (
+                          <span className="text-xs text-gray-400 ml-1">No rating yet</span>
+                        )}
+                      </div>
+
                       {contractor.contactName && (
                         <p className="text-gray-600 text-sm mb-1">
                           Contact: {contractor.contactName}

@@ -1375,20 +1375,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const agencyId = parseInt(req.params.agencyId);
       
-      const [properties, tasks, users, overdueTasks] = await Promise.all([
+      const [properties, users, inspectionCounts] = await Promise.all([
         storage.getPropertiesByAgency(agencyId),
-        storage.getMaintenanceTasksByAgency(agencyId),
         storage.getUsersByAgency(agencyId),
-        storage.getOverdueTasks(agencyId)
+        db.execute(sql`
+          SELECT
+            COUNT(*) FILTER (
+              WHERE ii.is_completed = false
+                AND ii.is_not_applicable = false
+            ) AS active_tasks,
+            COUNT(*) FILTER (
+              WHERE ii.is_completed = false
+                AND ii.is_not_applicable = false
+                AND ii.next_inspection_date IS NOT NULL
+                AND ii.next_inspection_date < NOW()
+            ) AS overdue_tasks,
+            COUNT(*) AS total_items,
+            COUNT(*) FILTER (WHERE ii.is_completed = true) AS completed_items
+          FROM inspection_items ii
+          JOIN property_rooms pr ON ii.room_id = pr.id
+          JOIN properties p ON pr.property_id = p.id
+          WHERE p.agency_id = ${agencyId}
+        `)
       ]);
 
-      const activeTasks = tasks.filter(task => 
-        ['scheduled', 'pending', 'in_progress'].includes(task.status)
-      );
+      const counts = inspectionCounts.rows[0] as {
+        active_tasks: string;
+        overdue_tasks: string;
+        total_items: string;
+        completed_items: string;
+      };
 
-      const completedTasks = tasks.filter(task => task.status === 'completed');
-      const totalTasks = tasks.length;
-      const complianceRate = totalTasks > 0 ? (completedTasks.length / totalTasks) * 100 : 100;
+      const totalItems = parseInt(counts.total_items) || 0;
+      const completedItems = parseInt(counts.completed_items) || 0;
+      const complianceRate = totalItems > 0 ? (completedItems / totalItems) * 100 : 100;
 
       // Calculate inspection metrics
       const today = new Date();
@@ -1406,8 +1426,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const metrics = {
         totalProperties: properties.length,
-        activeTasks: activeTasks.length,
-        overdueTasks: overdueTasks.length,
+        activeTasks: parseInt(counts.active_tasks) || 0,
+        overdueTasks: parseInt(counts.overdue_tasks) || 0,
         managers: users.filter(user => user.role === 'property_manager').length,
         complianceRate: Math.round(complianceRate * 10) / 10,
         overdueInspections,
